@@ -12,6 +12,45 @@ enum LSSDP_LOG {
     LSSDP_LOG_ERROR = 1 << 3
 };
 
+/** Global Variable **/
+static struct {
+    const char * MSEARCH;
+    const char * NOTIFY;
+    const char * RESPONSE;
+
+    const char * HEADER_MSEARCH;
+    const char * HEADER_NOTIFY;
+    const char * HEADER_RESPONSE;
+
+    const char * ADDR_LOCALHOST;
+    const char * ADDR_MULTICAST;
+
+    void (* log_callback)(const char * file, const char * tag, int level, int line, const char * func, const char * message);
+
+} Global = {
+    // SSDP Method
+    .MSEARCH  = "M-SEARCH",
+    .NOTIFY   = "NOTIFY",
+    .RESPONSE = "RESPONSE",
+
+    // SSDP Header
+    .HEADER_MSEARCH  = "M-SEARCH * HTTP/1.1\r\n",
+    .HEADER_NOTIFY   = "NOTIFY * HTTP/1.1\r\n",
+    .HEADER_RESPONSE = "HTTP/1.1 200 OK\r\n",
+
+    // IP Address
+    .ADDR_LOCALHOST = "127.0.0.1",
+    .ADDR_MULTICAST = "239.255.255.250",
+
+    // Log Callback
+    .log_callback = NULL
+};
+
+
+
+
+
+
 /* Struct : lssdp_nbr */
 #define LSSDP_FIELD_LEN         128
 #define LSSDP_LOCATION_LEN      256
