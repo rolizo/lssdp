@@ -69,7 +69,7 @@ typedef struct lssdp_nbr {
 /* Struct : lssdp_ctx */
 #define LSSDP_INTERFACE_NAME_LEN    16                      // IFNAMSIZ
 #define LSSDP_INTERFACE_LIST_SIZE   16
-#define LSSDP_IP_LEN                16
+#define LSSDP_IP_LEN                48
 typedef struct lssdp_ctx {
     int             sock;                                   // SSDP socket
     unsigned short  port;                                   // SSDP port (0x0000 ~ 0xFFFF)
