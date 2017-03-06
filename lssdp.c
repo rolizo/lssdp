@@ -10,6 +10,8 @@
 #include <net/if.h>     // struct ifconf, struct ifreq
 #include <fcntl.h>      // fcntl, F_GETFD, F_SETFD, FD_CLOEXEC
 #include <sys/socket.h> // struct sockaddr, AF_INET, SOL_SOCKET, socklen_t, setsockopt, socket, bind, sendto, recvfrom
+#include <sys/types.h>
+#include <netdb.h>
 #include <netinet/in.h> // struct sockaddr_in, struct ip_mreq, INADDR_ANY, IPPROTO_IP, also include <sys/socket.h>
 #include <arpa/inet.h>  // inet_aton, inet_ntop, inet_addr, also include <netinet/in.h>
 #include "lssdp.h"
@@ -54,6 +56,28 @@ static int lssdp_neighbor_remove_all(lssdp_ctx * lssdp);
 static void neighbor_list_free(lssdp_nbr * list);
 static struct lssdp_interface * find_interface_in_LAN(lssdp_ctx * lssdp, uint32_t address);
 
+
+
+
+void lssdp_init(){
+ 
+    //struct lssdp_config Global;
+    Global.MSEARCH  = "M-SEARCH";
+    Global.NOTIFY   = "NOTIFY";
+    Global.RESPONSE = "RESPONSE";
+
+    // SSDP Header
+    Global.HEADER_MSEARCH  = "M-SEARCH * HTTP/1.1\r\n";
+    Global.HEADER_NOTIFY   = "NOTIFY * HTTP/1.1\r\n";
+    Global.HEADER_RESPONSE = "HTTP/1.1 200 OK\r\n";
+
+    // IP Address
+    Global.ADDR_LOCALHOST = "127.0.0.1";
+    Global.ADDR_MULTICAST = "239.255.255.250";
+
+    // Log Callback
+    Global.log_callback = NULL;
+}
 
 
 // 01. lssdp_network_interface_update
@@ -103,7 +127,8 @@ int lssdp_network_interface_update(lssdp_ctx * lssdp) {
     struct ifreq * ifr;
     for (i = 0; i < ifc.ifc_len; i += _SIZEOF_ADDR_IFREQ(*ifr)) {
         ifr = (struct ifreq *)(buffer + i);
-        if (ifr->ifr_addr.sa_family != AF_INET) {
+        if (ifr->ifr_addr.sa_family != AF_INET) { 
+            lssdp_error("Skipping IPv6 interface\n");
             // only support IPv4
             continue;
         }
@@ -182,11 +207,57 @@ int lssdp_socket_create(lssdp_ctx * lssdp) {
         return -1;
     }
 
+
+    struct addrinfo   hints  = { 0 };    /* Hints for name lookup */
+    char* multicastPort = "1900"; 
+    struct addrinfo*  multicastAddr;     /* Multicast Address */
+    struct addrinfo*  localAddr;         /* Local address to bind to */         
+
+
+    /* Resolve the multicast group address */
+    hints.ai_family = PF_UNSPEC;    
+    hints.ai_flags  = AI_NUMERICHOST;
+    int status;
+    if ((status = getaddrinfo(Global.ADDR_MULTICAST, NULL, &hints, &multicastAddr)) != 0)
+    {
+        lssdp_debug("getaddrinfo: %s\n", gai_strerror(status));
+        exit(1);
+    } else {
+	lssdp_debug("Address: %s\n",Global.ADDR_MULTICAST);
+	lssdp_debug("ai_flags -> %i\n", multicastAddr->ai_flags) ;
+	lssdp_debug("ai_family -> %i\n", multicastAddr->ai_family) ;
+ 	lssdp_debug("ai_socktype -> %i\n", multicastAddr->ai_socktype) ;
+  	lssdp_debug("ai_protocol -> %i\n", multicastAddr->ai_protocol) ;
+ 	lssdp_debug("ai_addrlen -> %i\n", multicastAddr->ai_addrlen) ;
+        char str[INET6_ADDRSTRLEN];
+	switch(multicastAddr->ai_family){
+
+  	case AF_INET:
+		lssdp_debug("IPV4\n");
+		inet_ntop(AF_INET, (struct sockaddr_in *)multicastAddr->ai_addr,str,INET6_ADDRSTRLEN);
+            	break;
+
+        case AF_INET6:
+		lssdp_debug("IPV6\n");
+		inet_ntop(AF_INET6, (struct sockaddr_in6 *)multicastAddr->ai_addr,str,INET6_ADDRSTRLEN);
+		break;
+	}
+ 	printf("ai_addr hostname ->  %s\n",str);
+    }
+
+   /* Get a local address with the same family (IPv4 or IPv6) as our multicast group */
+    hints.ai_family   = multicastAddr->ai_family;
+    hints.ai_socktype = SOCK_DGRAM;
+    hints.ai_flags    = AI_PASSIVE; /* Return an address we can bind to */
+
+    if ( getaddrinfo(NULL, multicastPort, &hints, &localAddr) != 0 )
+	return -1;          
+
     // close original SSDP socket
     lssdp_socket_close(lssdp);
 
     // create UDP socket
-    lssdp->sock = socket(AF_INET, SOCK_DGRAM, 0);
+    lssdp->sock = socket(localAddr->ai_family, localAddr->ai_socktype, 0);
     if (lssdp->sock < 0) {
         lssdp_error("create socket failed, errno = %s (%d)\n", strerror(errno), errno);
         return -1;
@@ -219,24 +290,43 @@ int lssdp_socket_create(lssdp_ctx * lssdp) {
     }
 
     // bind socket
-    struct sockaddr_in addr = {
-        .sin_family      = AF_INET,
-        .sin_port        = htons(lssdp->port),
-        .sin_addr.s_addr = htonl(INADDR_ANY)
-    };
-    if (bind(lssdp->sock, (struct sockaddr *)&addr, sizeof(addr)) != 0) {
+    if (bind(lssdp->sock,localAddr->ai_addr, localAddr->ai_addrlen) != 0) {
         lssdp_error("bind failed, errno = %s (%d)\n", strerror(errno), errno);
         goto end;
     }
 
-    // set IP_ADD_MEMBERSHIP
-    struct ip_mreq imr = {
-        .imr_multiaddr.s_addr = inet_addr(Global.ADDR_MULTICAST),
-        .imr_interface.s_addr = htonl(INADDR_ANY)
-    };
-    if (setsockopt(lssdp->sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, &imr, sizeof(struct ip_mreq)) != 0) {
-        lssdp_error("setsockopt IP_ADD_MEMBERSHIP failed: %s (%d)\n", strerror(errno), errno);
-        goto end;
+    // set IP_ADD_MEMBERSHIP V4
+    if ( multicastAddr->ai_family  == PF_INET ) /* IPv4 */
+    {
+        lssdp_debug("Binding IPv4\n");
+        struct ip_mreq imr = {
+            .imr_multiaddr.s_addr = inet_addr(Global.ADDR_MULTICAST),
+            .imr_interface.s_addr = htonl(INADDR_ANY)
+        };
+        if (setsockopt(lssdp->sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, &imr, sizeof(struct ip_mreq)) != 0) {
+            lssdp_error("setsockopt IP_ADD_MEMBERSHIP failed: %s (%d)\n", strerror(errno), errno);
+            goto end;
+        }
+
+
+    // set IP_ADD_MEMBERSHIP V6
+    } else if ( multicastAddr->ai_family  == PF_INET6 &&
+              multicastAddr->ai_addrlen == sizeof(struct sockaddr_in6) ) /* IPv6 */
+    {
+        lssdp_debug("Binding IPv6\n");
+        struct ipv6_mreq multicastRequest;  /* Multicast address join structure */
+
+        /* Specify the multicast group */
+        memcpy(&multicastRequest.ipv6mr_multiaddr,
+               &((struct sockaddr_in6*)(multicastAddr->ai_addr))->sin6_addr,
+               sizeof(multicastRequest.ipv6mr_multiaddr));
+
+        /* Accept multicast from any interface */
+        multicastRequest.ipv6mr_interface = 0;
+
+        /* Join the multicast address */
+        if ( setsockopt(lssdp->sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, (char*) &multicastRequest, sizeof(multicastRequest)) != 0 )
+            exit(1);//DieWithError("setsockopt() failed");
     }
 
     lssdp_info("create SSDP socket %d\n", lssdp->sock);

@@ -38,6 +38,7 @@ int show_interface_list(lssdp_ctx * lssdp) {
 }
 
 int main() {
+    lssdp_init();
     lssdp_set_log_callback(log_callback);
 
     lssdp_ctx lssdp = {

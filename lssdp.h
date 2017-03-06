@@ -13,7 +13,7 @@ enum LSSDP_LOG {
 };
 
 /** Global Variable **/
-static struct {
+typedef struct lssdp_config {
     const char * MSEARCH;
     const char * NOTIFY;
     const char * RESPONSE;
@@ -27,25 +27,10 @@ static struct {
 
     void (* log_callback)(const char * file, const char * tag, int level, int line, const char * func, const char * message);
 
-} Global = {
-    // SSDP Method
-    .MSEARCH  = "M-SEARCH",
-    .NOTIFY   = "NOTIFY",
-    .RESPONSE = "RESPONSE",
+} lssdp_config;
 
-    // SSDP Header
-    .HEADER_MSEARCH  = "M-SEARCH * HTTP/1.1\r\n",
-    .HEADER_NOTIFY   = "NOTIFY * HTTP/1.1\r\n",
-    .HEADER_RESPONSE = "HTTP/1.1 200 OK\r\n",
 
-    // IP Address
-    .ADDR_LOCALHOST = "127.0.0.1",
-    .ADDR_MULTICAST = "239.255.255.250",
-
-    // Log Callback
-    .log_callback = NULL
-};
-
+struct lssdp_config Global;
 
 
 
@@ -110,6 +95,8 @@ typedef struct lssdp_ctx {
 } lssdp_ctx;
 
 
+
+void lssdp_init();
 /*
  * 01. lssdp_network_interface_update
  *

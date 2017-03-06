@@ -82,6 +82,7 @@ int show_interface_list_and_rebind_socket(lssdp_ctx * lssdp) {
 
 
 int main() {
+    lssdp_init();
     lssdp_set_log_callback(log_callback);
 
     lssdp_ctx lssdp = {

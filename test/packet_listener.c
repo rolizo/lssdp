@@ -66,11 +66,12 @@ int show_ssdp_packet(struct lssdp_ctx * lssdp, const char * packet, size_t packe
 
 
 int main() {
+    lssdp_init();
     lssdp_set_log_callback(log_callback);
 
     lssdp_ctx lssdp = {
         .port = 1900,
-        // .debug = true,           // debug
+        .debug = true,           // debug
 
         // callback
         .network_interface_changed_callback = show_interface_list_and_rebind_socket,
@@ -80,6 +81,10 @@ int main() {
     /* get network interface at first time, network_interface_changed_callback will be invoke
      * SSDP socket will be created in callback function
      */
+
+    Global.ADDR_LOCALHOST = "::1";
+    Global.ADDR_MULTICAST = "FF02::C";
+
     lssdp_network_interface_update(&lssdp);
 
     long long last_time = get_current_time();
