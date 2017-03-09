@@ -40,26 +40,11 @@ const char * NOTIFY  =  "NOTIFY";
 
 void (* _log_callback)(const char * file, const char * tag, int level, int line,
                        const char * func, const char * message);
-/** Struct: lssdp_packet **/
-typedef struct lssdp_packet {
-	char
-	method      [LSSDP_FIELD_LEN];      // M-SEARCH, NOTIFY, RESPONSE
-	char            st          [LSSDP_FIELD_LEN];      // Search Target
-	char            usn         [LSSDP_FIELD_LEN];      // Unique Service Name
-	char            location    [LSSDP_LOCATION_LEN];   // Location
-
-	/* Additional SSDP Header Fields */
-	char            sm_id       [LSSDP_FIELD_LEN];
-	char            device_type [LSSDP_FIELD_LEN];
-	long long       update_time;
-} lssdp_packet;
 
 
 /** Internal Function **/
 static int send_multicast_data(const char * data , lssdp_ctx * lssdp);
 static int lssdp_send_response(lssdp_ctx * lssdp, struct sockaddr_in6 address);
-static int lssdp_packet_parser(const char * data, size_t data_len,
-                               lssdp_packet * packet);
 static int parse_field_line(const char * data, size_t start, size_t end,
                             lssdp_packet * packet);
 static int get_colon_index(const char * string, size_t start, size_t end);
@@ -141,8 +126,8 @@ int lssdp_socket_create(lssdp_ctx * lssdp) {
 
 
 	/* Join the multicast group. We do this seperately depending on whether we
-	 *    * are using IPv4 or IPv6.
-	 *       */
+	*  are using IPv4 or IPv6.
+	*/
 	if ( multicastAddr->ai_family  == PF_INET &&
 	        multicastAddr->ai_addrlen == sizeof(struct sockaddr_in6) ) /* IPv4 */
 	{
@@ -238,7 +223,7 @@ int lssdp_socket_read(lssdp_ctx * lssdp) {
 		}
 		return 0;
 	}
-
+/*
 	printf("Cheking response\n");
 	// M-SEARCH: send RESPONSE back
 	if (strcmp(packet.method, MSEARCH) == 0) {
@@ -249,10 +234,7 @@ int lssdp_socket_read(lssdp_ctx * lssdp) {
 	}
 
 
-	if (lssdp->debug) {
-		lssdp_info("RECV <- %-8s   %-28s  %s\n", packet.method, packet.location,
-		           packet.sm_id);
-	}
+*/
 
 	// invoke packet received callback
 	if (lssdp->packet_received_callback != NULL) {
@@ -314,8 +296,8 @@ int lssdp_send_byebye(lssdp_ctx * lssdp) {
 	         "SM_ID:%s\r\n"
 	         "DEV_TYPE:%s\r\n"
 	         "\r\n",
-	         HEADER_NOTIFY,                       // HEADER
-	         lssdp->config.ADDR_MULTICAST, lssdp->port,         // HOST
+	         HEADER_NOTIFY,                              // HEADER
+	         lssdp->config.ADDR_MULTICAST, lssdp->port,  // HOST
 	         lssdp->header.location.prefix,              // LOCATION
 	         lssdp->header.location.domain,              // LOCATION
 	         lssdp->header.location.suffix,
@@ -357,8 +339,8 @@ int lssdp_send_notify(lssdp_ctx * lssdp) {
 	         "SM_ID:%s\r\n"
 	         "DEV_TYPE:%s\r\n"
 	         "\r\n",
-	         HEADER_NOTIFY,                       // HEADER
-	         lssdp->config.ADDR_MULTICAST, lssdp->port,         // HOST
+	         HEADER_NOTIFY,                              // HEADER
+	         lssdp->config.ADDR_MULTICAST, lssdp->port,  // HOST
 	         lssdp->header.location.prefix,              // LOCATION
 	         lssdp->header.location.domain,              // LOCATION
 	         lssdp->header.location.suffix,
@@ -523,7 +505,7 @@ static int lssdp_send_response(lssdp_ctx * lssdp, struct sockaddr_in6 address) {
 	return 0;
 }
 
-static int lssdp_packet_parser(const char * data, size_t data_len,
+int lssdp_packet_parser(const char * data, size_t data_len,
                                lssdp_packet * packet) {
 
 	printf("Trying to parse packet\n");
@@ -631,6 +613,12 @@ static int parse_field_line(const char * data, size_t start, size_t end,
 
 	if (field_len == strlen("nt") && strncasecmp(field, "nt", field_len) == 0) {
 		memcpy(packet->st, value,
+		       value_len < LSSDP_FIELD_LEN ? value_len : LSSDP_FIELD_LEN - 1);
+		return 0;
+	}
+
+	if (field_len == strlen("nts") && strncasecmp(field, "nts", field_len) == 0) {
+		memcpy(packet->nts, value,
 		       value_len < LSSDP_FIELD_LEN ? value_len : LSSDP_FIELD_LEN - 1);
 		return 0;
 	}

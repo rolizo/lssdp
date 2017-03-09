@@ -36,24 +36,37 @@ typedef struct lssdp_config {
 } lssdp_config;
 
 typedef struct lssdp_nbr {
-	char
-	usn         [LSSDP_FIELD_LEN];          // Unique Service Name (Device Name or MAC)
-	char            location    [LSSDP_LOCATION_LEN];       // URL or IP(:Port)
+	char	usn         [LSSDP_FIELD_LEN];          // Unique Service Name (Device Name or MAC)
+	char    location    [LSSDP_LOCATION_LEN];       // URL or IP(:Port)
 
 	/* Additional SSDP Header Fields */
-	char            sm_id       [LSSDP_FIELD_LEN];
-	char            device_type [LSSDP_FIELD_LEN];
-	long long       update_time;
+	char        sm_id       [LSSDP_FIELD_LEN];
+	char        device_type [LSSDP_FIELD_LEN];
+	long long   update_time;
 	struct lssdp_nbr * next;
 } lssdp_nbr;
 
 
 
 struct t_location {                                     // Location (optional):
-	char    prefix              [LSSDP_FIELD_LEN];  // Protocal: "https://" or "http://"
-	char    domain              [LSSDP_FIELD_LEN];  // if domain is empty, using Interface IP as default
-	char    suffix              [LSSDP_FIELD_LEN];  // URI or Port: "/index.html" or ":80"
+	char    prefix   [LSSDP_FIELD_LEN];  // Protocal: "https://" or "http://"
+	char    domain   [LSSDP_FIELD_LEN];  // if domain is empty, using Interface IP as default
+	char    suffix   [LSSDP_FIELD_LEN];  // URI or Port: "/index.html" or ":80"
 };
+
+/** Struct: lssdp_packet **/
+typedef struct lssdp_packet {
+	char method      [LSSDP_FIELD_LEN];      // M-SEARCH, NOTIFY, RESPONSE, BYE
+	char st          [LSSDP_FIELD_LEN];      // Search Target
+	char nts         [LSSDP_FIELD_LEN];      // Search Target
+	char usn         [LSSDP_FIELD_LEN];      // Unique Service Name
+	char location    [LSSDP_LOCATION_LEN];   // Location
+
+	/* Additional SSDP Header Fields */
+	char            sm_id       [LSSDP_FIELD_LEN];
+	char            device_type [LSSDP_FIELD_LEN];
+	long long       update_time;
+} lssdp_packet;
 
 
 
@@ -61,13 +74,12 @@ struct t_location {                                     // Location (optional):
 
 struct t_header {
 	/* SSDP Standard Header Fields */
-	char        search_target       [LSSDP_FIELD_LEN];  // Search Target
-	char
-	unique_service_name [LSSDP_FIELD_LEN];  // Unique Service Name: MAC or User Name
+	char search_target       [LSSDP_FIELD_LEN];  // Search Target
+	char unique_service_name [LSSDP_FIELD_LEN];  // Unique Service Name: MAC or User Name
 	struct t_location location;
 	/* Additional SSDP Header Fields */
-	char        sm_id       [LSSDP_FIELD_LEN];
-	char        device_type [LSSDP_FIELD_LEN];
+	char sm_id       [LSSDP_FIELD_LEN];
+	char device_type [LSSDP_FIELD_LEN];
 };
 
 
@@ -110,7 +122,7 @@ int lssdp_stop_listen()
 
 */
 
-
+//Set default values of lssdp
 void lssdp_init(lssdp_ctx * lssdp);
 
 
@@ -140,6 +152,8 @@ int lssdp_send_msearch(lssdp_ctx * lssdp);
 int lssdp_send_byebye(lssdp_ctx * lssdp);
 int lssdp_send_notify(lssdp_ctx * lssdp);
 
+int lssdp_packet_parser(const char * data, size_t data_len,
+                               lssdp_packet * packet);
 
 
 void lssdp_set_log_callback(void (* callback)(const char * file,

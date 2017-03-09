@@ -5,16 +5,17 @@
 #include <unistd.h>     // select
 #include <sys/time.h>   // gettimeofday
 #include "lssdp.h"
+#include <string>
 
 
 void log_callback(const char * file, const char * tag, int level, int line,
                   const char * func, const char * message) {
-	char * level_name = "DEBUG";
+	std::string level_name = "DEBUG";
 	if (level == LSSDP_LOG_INFO)   level_name = "INFO";
 	if (level == LSSDP_LOG_WARN)   level_name = "WARN";
 	if (level == LSSDP_LOG_ERROR)  level_name = "ERROR";
 
-	printf("[%-5s][%s] %s", level_name, tag, message);
+	printf("[%-5s][%s] %s", level_name.c_str(), tag, message);
 }
 
 long long get_current_time() {
@@ -33,20 +34,19 @@ int show_ssdp_packet(struct lssdp_ctx * lssdp, const char * packet,
 	return 0;
 }
 
-
 int main() {
 
-	lssdp_ctx lssdp = {
-		.port = 1900,
-		.debug = true,
-		.packet_received_callback  = show_ssdp_packet
-	};
+	lssdp_ctx lssdp;
+	lssdp.port = 1900;
+	lssdp.debug = true;   
+	lssdp.packet_received_callback = show_ssdp_packet;
 
 	lssdp_init(&lssdp);
-
+	lssdp_set_log_callback(log_callback);
 	lssdp.config.ADDR_LOCALHOST = "::1";
 	lssdp.config.ADDR_MULTICAST = "FF02::C";
-	lssdp_set_log_callback(log_callback);
+
+
 
 	strncpy(lssdp.header.location.prefix,"http://\0",LSSDP_FIELD_LEN);
 	strncpy(lssdp.header.location.domain,"test_location",LSSDP_FIELD_LEN);
@@ -57,16 +57,15 @@ int main() {
 	strncpy(lssdp.header.sm_id,"commend_switchbox\0",LSSDP_FIELD_LEN);
 	strncpy(lssdp.header.unique_service_name,"Barcode",LSSDP_FIELD_LEN);
 	lssdp_socket_create(&lssdp);
-	lssdp_send_msearch(&lssdp);
+	lssdp_send_notify(&lssdp);
 
 	// Main Loop
 	for (;;) {
 		fd_set fs;
 		FD_ZERO(&fs);
 		FD_SET(lssdp.sock, &fs);
-		struct timeval tv = {
-			.tv_usec = 500 * 1000   // 500 ms
-		};
+		struct timeval tv;
+		tv.tv_usec = 500 * 1000;   // 500 ms
 
 		int ret = select(lssdp.sock + 1, &fs, NULL, NULL, &tv);
 		if (ret < 0) {
