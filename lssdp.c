@@ -417,7 +417,7 @@ static int send_multicast_data(const char * data , lssdp_ctx*lssdp) {
 	                    0)) < 0 ) {
 		perror("Cannot create multicast socket: ");
 		close(sock);
-		return ;
+		return -1;
 	}
 
 
@@ -432,7 +432,7 @@ static int send_multicast_data(const char * data , lssdp_ctx*lssdp) {
 	                (char*) &multicastTTL, sizeof(multicastTTL)) != 0 ) {
 		perror("Cannot set multicast ttl: ");
 		close(sock);
-		return;
+		return -1;
 	}
 
 
@@ -445,7 +445,7 @@ static int send_multicast_data(const char * data , lssdp_ctx*lssdp) {
 	               (char*)&iface, sizeof(iface)) != 0)  {
 		perror("Cannot set multicast interface");
 		close(sock);
-		return;
+		return -1;
 	}
 
 
