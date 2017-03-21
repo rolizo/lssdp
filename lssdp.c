@@ -1,4 +1,5 @@
 #define _POSIX_C_SOURCE 200112L // getaddrinfo
+#define _DEFAULT_SOURCE // struct ip_mreq
 
 #include <sys/types.h>
 #include <stdio.h>      // snprintf, vsnprintf
