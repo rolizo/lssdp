@@ -276,6 +276,10 @@ int lssdp_send_msearch(lssdp_ctx * lssdp) {
 
 	// 2. send M-SEARCH to each interface
 	int ret = send_multicast_data(msearch, lssdp);
+	if (ret < 0) {
+		lssdp_error("failed to send multicast data\n");
+		return -1;
+	}
 
 	return 0;
 }
@@ -317,7 +321,10 @@ int lssdp_send_byebye(lssdp_ctx * lssdp) {
 
 	// send NOTIFY
 	int ret = send_multicast_data(notify, lssdp);
-
+	if (ret < 0) {
+		lssdp_error("failed to send multicast data\n");
+		return -1;
+	}
 
 	return 0;
 }
@@ -360,7 +367,10 @@ int lssdp_send_notify(lssdp_ctx * lssdp) {
 
 	// send NOTIFY
 	int ret = send_multicast_data(notify, lssdp);
-
+	if (ret < 0) {
+		lssdp_error("failed to send multicast data\n");
+		return -1;
+	}
 
 	return 0;
 }
