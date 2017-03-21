@@ -115,7 +115,7 @@ int lssdp_socket_create(lssdp_ctx * lssdp) {
 		exit(1);
 	}
 
-	u_char loop = 1;
+	unsigned char loop = 1;
 	setsockopt(lssdp->sock, IPPROTO_IP, IP_MULTICAST_LOOP, &loop, sizeof(loop));
 
 
