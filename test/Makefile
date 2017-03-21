@@ -1,5 +1,5 @@
-CXX= g++
-CXXFLAGS = -Og -std=c++11 -Wall -Werror -I../
+CXX ?= g++
+CXXFLAGS ?= -g -Og -std=c++11 -Wall -Werror -I../
 
 OBJS = ../lssdp.o
 
