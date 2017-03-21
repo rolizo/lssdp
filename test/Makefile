@@ -1,4 +1,6 @@
+CC ?= gcc
 CXX ?= g++
+CFLAGS ?= -g -Og -std=c99 -Wall -Werror -I../
 CXXFLAGS ?= -g -Og -std=c++11 -Wall -Werror -I../
 
 OBJS = ../lssdp.o
