@@ -6,6 +6,13 @@
 #include <sys/time.h>   // gettimeofday
 #include "lssdp.h"
 #include <string>
+#include <signal.h>
+
+static volatile int keepRunning = 1;
+
+void intHandler(int dummy) {
+	keepRunning = 0;
+}
 
 
 void log_callback(const char * file, const char * tag, int level, int line,
@@ -28,9 +35,37 @@ long long get_current_time() {
 }
 
 
+
+void print_lssdp_packet(lssdp_packet &parsed_packet) {
+
+	printf("---------------------------------------------------\n");
+	printf("METHOD: %s\n",parsed_packet.method);
+	printf("ST: %s\n",parsed_packet.st);
+	printf("USN: %s\n",parsed_packet.usn);
+	printf("LOCATION: %s\n",parsed_packet.location);
+	printf("SM_ID: %s\n",parsed_packet.sm_id);
+	printf("DEVICE: %s\n",parsed_packet.device_type);
+	printf("NTS: %s\n",parsed_packet.nts);
+	printf("---------------------------------------------------\n");
+}
+
+
+
+
+
 int show_ssdp_packet(struct lssdp_ctx * lssdp, const char * packet,
                      size_t packet_len) {
 	printf("%s", packet);
+
+
+
+	lssdp_packet parsed_packet = {};
+	if (lssdp_packet_parser(packet, packet_len, &parsed_packet) == 0) {
+
+		print_lssdp_packet(parsed_packet);
+	}
+
+
 	return 0;
 }
 
@@ -38,14 +73,13 @@ int main() {
 
 	lssdp_ctx lssdp;
 	lssdp.port = 1900;
-	lssdp.debug = true;   
+	lssdp.debug = true;
 	lssdp.packet_received_callback = show_ssdp_packet;
 
 	lssdp_init(&lssdp);
 	lssdp_set_log_callback(log_callback);
 	lssdp.config.ADDR_LOCALHOST = "::1";
 	lssdp.config.ADDR_MULTICAST = "FF02::C";
-
 
 
 	strncpy(lssdp.header.location.prefix,"http://\0",LSSDP_FIELD_LEN);
@@ -59,8 +93,11 @@ int main() {
 	lssdp_socket_create(&lssdp);
 	lssdp_send_notify(&lssdp);
 
+	//Capture CTRL-C and send bye before exiting
+	signal(SIGINT, intHandler);
+
 	// Main Loop
-	for (;;) {
+	while (keepRunning) {
 		fd_set fs;
 		FD_ZERO(&fs);
 		FD_SET(lssdp.sock, &fs);
@@ -78,6 +115,8 @@ int main() {
 		}
 
 	}
+
+	lssdp_send_byebye(&lssdp);
 
 	return EXIT_SUCCESS;
 }

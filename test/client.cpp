@@ -10,6 +10,7 @@
 #include <algorithm>
 #include "client.h"
 
+
 void print_devices();
 int ping_device(struct device*target);
 int add_device(lssdp_packet &packet);
@@ -35,7 +36,7 @@ long long get_current_time() {
 	return (long long) time.tv_sec * 1000 + (long long) time.tv_usec / 1000;
 }
 
-void print_lssdp_packet(lssdp_packet &parsed_packet){
+void print_lssdp_packet(lssdp_packet &parsed_packet) {
 
 	printf("---------------------------------------------------\n");
 	printf("METHOD: %s\n",parsed_packet.method);
@@ -49,38 +50,40 @@ void print_lssdp_packet(lssdp_packet &parsed_packet){
 }
 
 int parse_packet(struct lssdp_ctx * lssdp, const char * packet,
-                     size_t packet_len) {
+                 size_t packet_len) {
 
 	lssdp_packet parsed_packet = {};
-	if (lssdp_packet_parser(packet, packet_len, &parsed_packet) == 0) {
-
-		print_lssdp_packet(parsed_packet);
-
-		if(strcmp("ssdp:alive",parsed_packet.nts) == 0){
-			add_device(parsed_packet);
-		} else if(strcmp("ssdp:byebye",parsed_packet.nts) == 0){
-			std::string check_barcode = parsed_packet.usn; 
-			remove_device(check_barcode);
-		} else if (strcmp("ssdp:all",parsed_packet.nts) == 0){
-		} else {
-			printf("UNSUPPORTED PACKET\n\n");
-		}
-
-		return 0;
-	} else {
-		printf("Invalid PACKET !!!!");
+	if (lssdp_packet_parser(packet, packet_len, &parsed_packet) != 0) {
+		printf("Failed to parse packet");
+		return -1;
 	}
+
+	print_lssdp_packet(parsed_packet);
+
+	if(strcmp("ssdp:alive",parsed_packet.nts) == 0) {
+		add_device(parsed_packet);
+	} else if(strcmp("ssdp:byebye",parsed_packet.nts) == 0) {
+		std::string check_barcode = parsed_packet.usn;
+		remove_device(check_barcode);
+	} else if (strcmp("ssdp:all",parsed_packet.nts) == 0) {
+	} else if (strcmp( parsed_packet.method,"RESPONSE") == 0) {
+		add_device(parsed_packet);
+	} else 	{
+		printf("UNSUPPORTED PACKET\n\n");
+	}
+
+	return 0;
 
 	return -1;
 }
 
-//returns 0 if device was removed 
+//returns 0 if device was removed
 //returns -1 if no device was removed
-int remove_device(std::string barcode){
+int remove_device(std::string barcode) {
 
 	device*match = find_device(barcode);
 
-	if (match){
+	if (match) {
 		device_list.remove(match);
 		print_devices();
 		return 0;
@@ -92,12 +95,12 @@ int remove_device(std::string barcode){
 
 
 //Find device in device list with matching barcode
-//Returns Null if not found 
-device* find_device(std::string barcode){
+//Returns Null if not found
+device* find_device(std::string barcode) {
 
 	std::list<struct device*>::iterator iter;
-	for(iter = device_list.begin(); iter != device_list.end(); iter++){
-		if((*iter)->barcode == barcode){
+	for(iter = device_list.begin(); iter != device_list.end(); iter++) {
+		if((*iter)->barcode == barcode) {
 			return (*iter);
 		}
 	}
@@ -105,17 +108,17 @@ device* find_device(std::string barcode){
 }
 
 
-bool is_device_unique(std::string barcode){
+bool is_device_unique(std::string barcode) {
 
 	if(find_device(barcode))
 		return false;
 	return true;
 }
 
-int add_device(lssdp_packet &packet){
+int add_device(lssdp_packet &packet) {
 
-	std::string check_barcode = packet.usn; 
-	if(!is_device_unique(check_barcode)){
+	std::string check_barcode = packet.usn;
+	if(!is_device_unique(check_barcode)) {
 		return -1;
 	}
 
@@ -124,35 +127,35 @@ int add_device(lssdp_packet &packet){
 	ptr->barcode=packet.usn;
 	ptr->update_time=packet.update_time;
 	device_list.push_back(ptr);
-	
+
 	print_devices();
 	return 0;
 }
 
 
-int ping_device(struct device*target){
-	
+int ping_device(struct device*target) {
+
 
 	return 0;
 }
 
-void ping_devices(){
+void ping_devices() {
 
 	std::list<struct device*>::iterator iter;
-	for(iter = device_list.begin(); iter != device_list.end(); iter++){
+	for(iter = device_list.begin(); iter != device_list.end(); iter++) {
 		ping_device(*iter);
 	}
 
 }
 
-void print_devices(){
+void print_devices() {
 
 
 	std::cout << "--Device List---" << std::endl;
 	std::list<struct device*>::iterator iter;
-	for(iter = device_list.begin(); iter != device_list.end(); iter++){
+	for(iter = device_list.begin(); iter != device_list.end(); iter++) {
 		std::string status;
-		if( (*iter)->state ==  PAIRED){
+		if( (*iter)->state ==  PAIRED) {
 			status = "PAIRED";
 		} else {
 			status = "UNREACHABLE";
@@ -168,13 +171,14 @@ void connect_device(struct device *ptr)
 	paired_device_list.push_back(ptr);
 }
 
-void disconnect_device(struct device *ptr){
+void disconnect_device(struct device *ptr) {
 
 	std::list<struct device*>::iterator iter;
-	for(iter = paired_device_list.begin(); iter != paired_device_list.end(); iter++){
-		if((*iter)->barcode == ptr->barcode){    
+	for(iter = paired_device_list.begin(); iter != paired_device_list.end();
+	        iter++) {
+		if((*iter)->barcode == ptr->barcode) {
 			paired_device_list.remove(*iter);
-		}		
+		}
 	}
 }
 
@@ -211,6 +215,9 @@ int main() {
 		struct timeval tv;
 		tv.tv_usec = 500 * 1000;   // 500 ms
 
+
+		//TODO: Remove devices which timed out from list
+
 		int ret = select(lssdp.sock + 1, &fs, NULL, NULL, &tv);
 		if (ret < 0) {
 			printf("select error, ret = %d\n", ret);
@@ -220,7 +227,6 @@ int main() {
 		if (ret > 0) {
 			lssdp_socket_read(&lssdp);
 		}
-
 	}
 
 	return EXIT_SUCCESS;

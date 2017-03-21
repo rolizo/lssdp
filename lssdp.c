@@ -111,6 +111,10 @@ int lssdp_socket_create(lssdp_ctx * lssdp) {
 		exit(1);
 	}
 
+	u_char loop = 1;
+	setsockopt(lssdp->sock, IPPROTO_IP, IP_MULTICAST_LOOP, &loop, sizeof(loop));
+
+
 	// set non-blocking
 	int opt = 1;
 	if (ioctl(lssdp->sock, FIONBIO, &opt) != 0) {
@@ -223,8 +227,7 @@ int lssdp_socket_read(lssdp_ctx * lssdp) {
 		}
 		return 0;
 	}
-/*
-	printf("Cheking response\n");
+
 	// M-SEARCH: send RESPONSE back
 	if (strcmp(packet.method, MSEARCH) == 0) {
 		printf("Sending response\n");
@@ -234,7 +237,7 @@ int lssdp_socket_read(lssdp_ctx * lssdp) {
 	}
 
 
-*/
+
 
 	// invoke packet received callback
 	if (lssdp->packet_received_callback != NULL) {
@@ -414,10 +417,7 @@ static int send_multicast_data(const char * data , lssdp_ctx*lssdp) {
 	}
 
 
-	int loop = 0;
-
-
-	//////////////IPv6
+	int loop = 1;
 	setsockopt(sock, IPPROTO_IPV6, IPV6_MULTICAST_LOOP, &loop, sizeof(loop))  ;
 
 	/* Set TTL of multicast packet */
@@ -506,7 +506,7 @@ static int lssdp_send_response(lssdp_ctx * lssdp, struct sockaddr_in6 address) {
 }
 
 int lssdp_packet_parser(const char * data, size_t data_len,
-                               lssdp_packet * packet) {
+                        lssdp_packet * packet) {
 
 	printf("Trying to parse packet\n");
 

@@ -153,7 +153,7 @@ int lssdp_send_byebye(lssdp_ctx * lssdp);
 int lssdp_send_notify(lssdp_ctx * lssdp);
 
 int lssdp_packet_parser(const char * data, size_t data_len,
-                               lssdp_packet * packet);
+                        lssdp_packet * packet);
 
 
 void lssdp_set_log_callback(void (* callback)(const char * file,

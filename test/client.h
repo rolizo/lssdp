@@ -14,7 +14,7 @@ typedef struct device
 	std::string barcode;
 	std::string location;
 	long long update_time;
-} device; 
+} device;
 
 std::list<device*> device_list;
 std::list<device*> paired_device_list;
