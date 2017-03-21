@@ -295,7 +295,7 @@ int lssdp_send_byebye(lssdp_ctx * lssdp) {
 
 	// set notify packet
 	char notify[LSSDP_BUFFER_LEN] = {};
-	char * domain = lssdp->header.location.domain;
+	// not used: char * domain = lssdp->header.location.domain;
 	snprintf(notify, sizeof(notify),
 	         "%s"
 	         "HOST:%s:%d\r\n"
@@ -341,7 +341,7 @@ int lssdp_send_notify(lssdp_ctx * lssdp) {
 
 	// set notify packet
 	char notify[LSSDP_BUFFER_LEN] = {};
-	char * domain = lssdp->header.location.domain;
+	// not used: char * domain = lssdp->header.location.domain;
 	snprintf(notify, sizeof(notify),
 	         "%s"
 	         "HOST:%s:%d\r\n"
@@ -481,7 +481,7 @@ static int lssdp_send_response(lssdp_ctx * lssdp, struct sockaddr_in6 address) {
 
 	// 2. set response packet
 	char response[LSSDP_BUFFER_LEN] = {};
-	char * domain = lssdp->header.location.domain;
+	// not used: char * domain = lssdp->header.location.domain;
 	int response_len = snprintf(response, sizeof(response),
 	                            "%s"
 	                            "CACHE-CONTROL:max-age=10\r\n"
