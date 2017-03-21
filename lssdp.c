@@ -1,7 +1,11 @@
+#define _POSIX_C_SOURCE 200112L // getaddrinfo
+
+#include <sys/types.h>
 #include <stdio.h>      // snprintf, vsnprintf
 #include <stdlib.h>     // malloc, free
 #include <stdarg.h>     // va_start, va_end, va_list
 #include <string.h>     // memset, memcpy, strlen, strcpy, strcmp, strncasecmp, strerror
+#include <strings.h>
 #include <ctype.h>      // isprint, isspace
 #include <errno.h>      // errno
 #include <unistd.h>     // close
