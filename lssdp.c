@@ -248,6 +248,7 @@ int lssdp_socket_read(lssdp_ctx * lssdp) {
 		lssdp->packet_received_callback(lssdp, buffer, recv_len);
 	}
 
+	return 0;
 }
 
 // 05. lssdp_send_msearch
