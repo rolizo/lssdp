@@ -213,6 +213,7 @@ int main() {
 		FD_ZERO(&fs);
 		FD_SET(lssdp.sock, &fs);
 		struct timeval tv;
+		tv.tv_sec = 0;
 		tv.tv_usec = 500 * 1000;   // 500 ms
 
 
