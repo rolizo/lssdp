@@ -1,5 +1,6 @@
 #define _POSIX_C_SOURCE 200112L // getaddrinfo
-#define _DEFAULT_SOURCE // struct ip_mreq
+#define _DEFAULT_SOURCE // struct ip_mreq, newer Ubuntu/glib 16.04
+#define _BSD_SOURCE // struct ip_mreq, older Ubuntu/glib 12.04
 
 #include <sys/types.h>
 #include <stdio.h>      // snprintf, vsnprintf
