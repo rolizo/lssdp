@@ -1,7 +1,12 @@
+#define _POSIX_C_SOURCE 200112L // getaddrinfo
+#define _DEFAULT_SOURCE // struct ip_mreq
+
+#include <sys/types.h>
 #include <stdio.h>      // snprintf, vsnprintf
 #include <stdlib.h>     // malloc, free
 #include <stdarg.h>     // va_start, va_end, va_list
 #include <string.h>     // memset, memcpy, strlen, strcpy, strcmp, strncasecmp, strerror
+#include <strings.h>
 #include <ctype.h>      // isprint, isspace
 #include <errno.h>      // errno
 #include <unistd.h>     // close
@@ -111,7 +116,7 @@ int lssdp_socket_create(lssdp_ctx * lssdp) {
 		exit(1);
 	}
 
-	u_char loop = 1;
+	unsigned char loop = 1;
 	setsockopt(lssdp->sock, IPPROTO_IP, IP_MULTICAST_LOOP, &loop, sizeof(loop));
 
 
@@ -244,6 +249,7 @@ int lssdp_socket_read(lssdp_ctx * lssdp) {
 		lssdp->packet_received_callback(lssdp, buffer, recv_len);
 	}
 
+	return 0;
 }
 
 // 05. lssdp_send_msearch
@@ -271,6 +277,10 @@ int lssdp_send_msearch(lssdp_ctx * lssdp) {
 
 	// 2. send M-SEARCH to each interface
 	int ret = send_multicast_data(msearch, lssdp);
+	if (ret < 0) {
+		lssdp_error("failed to send multicast data\n");
+		return -1;
+	}
 
 	return 0;
 }
@@ -286,7 +296,7 @@ int lssdp_send_byebye(lssdp_ctx * lssdp) {
 
 	// set notify packet
 	char notify[LSSDP_BUFFER_LEN] = {};
-	char * domain = lssdp->header.location.domain;
+	// not used: char * domain = lssdp->header.location.domain;
 	snprintf(notify, sizeof(notify),
 	         "%s"
 	         "HOST:%s:%d\r\n"
@@ -312,7 +322,10 @@ int lssdp_send_byebye(lssdp_ctx * lssdp) {
 
 	// send NOTIFY
 	int ret = send_multicast_data(notify, lssdp);
-
+	if (ret < 0) {
+		lssdp_error("failed to send multicast data\n");
+		return -1;
+	}
 
 	return 0;
 }
@@ -329,7 +342,7 @@ int lssdp_send_notify(lssdp_ctx * lssdp) {
 
 	// set notify packet
 	char notify[LSSDP_BUFFER_LEN] = {};
-	char * domain = lssdp->header.location.domain;
+	// not used: char * domain = lssdp->header.location.domain;
 	snprintf(notify, sizeof(notify),
 	         "%s"
 	         "HOST:%s:%d\r\n"
@@ -355,7 +368,10 @@ int lssdp_send_notify(lssdp_ctx * lssdp) {
 
 	// send NOTIFY
 	int ret = send_multicast_data(notify, lssdp);
-
+	if (ret < 0) {
+		lssdp_error("failed to send multicast data\n");
+		return -1;
+	}
 
 	return 0;
 }
@@ -413,7 +429,7 @@ static int send_multicast_data(const char * data , lssdp_ctx*lssdp) {
 	                    0)) < 0 ) {
 		perror("Cannot create multicast socket: ");
 		close(sock);
-		return ;
+		return -1;
 	}
 
 
@@ -428,7 +444,7 @@ static int send_multicast_data(const char * data , lssdp_ctx*lssdp) {
 	                (char*) &multicastTTL, sizeof(multicastTTL)) != 0 ) {
 		perror("Cannot set multicast ttl: ");
 		close(sock);
-		return;
+		return -1;
 	}
 
 
@@ -441,7 +457,7 @@ static int send_multicast_data(const char * data , lssdp_ctx*lssdp) {
 	               (char*)&iface, sizeof(iface)) != 0)  {
 		perror("Cannot set multicast interface");
 		close(sock);
-		return;
+		return -1;
 	}
 
 
@@ -466,7 +482,7 @@ static int lssdp_send_response(lssdp_ctx * lssdp, struct sockaddr_in6 address) {
 
 	// 2. set response packet
 	char response[LSSDP_BUFFER_LEN] = {};
-	char * domain = lssdp->header.location.domain;
+	// not used: char * domain = lssdp->header.location.domain;
 	int response_len = snprintf(response, sizeof(response),
 	                            "%s"
 	                            "CACHE-CONTROL:max-age=10\r\n"
