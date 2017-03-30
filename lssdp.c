@@ -417,7 +417,7 @@ static int send_multicast_data(const char * data , lssdp_ctx*lssdp) {
 	}
 
 
-	struct addrinfo*  multicastAddr2;     /* Multicast Address */
+	struct addrinfo*  multicastAddr2 = NULL;     /* Multicast Address */
 	struct addrinfo hints = { 0 };    /* Hints for name lookup */
 	int  multicastTTL =255;           /* Arg: TTL of multicast packets */
 
@@ -433,6 +433,7 @@ static int send_multicast_data(const char * data , lssdp_ctx*lssdp) {
 	                          &multicastAddr2)) != 0 )
 	{
 		lssdp_error("getaddrinfo: %s\n", gai_strerror(status));
+		return -1;
 	}
 
 
@@ -443,8 +444,7 @@ static int send_multicast_data(const char * data , lssdp_ctx*lssdp) {
 	if ( (sock = socket(multicastAddr2->ai_family, multicastAddr2->ai_socktype,
 	                    0)) < 0 ) {
 		lssdp_error("Cannot create multicast socket: ");
-		close(sock);
-		return -1;
+		goto fail;
 	}
 
 
@@ -458,8 +458,7 @@ static int send_multicast_data(const char * data , lssdp_ctx*lssdp) {
 	                multicastAddr2->ai_family == PF_INET6 ? IPV6_MULTICAST_HOPS : IP_MULTICAST_TTL,
 	                (char*) &multicastTTL, sizeof(multicastTTL)) != 0 ) {
 		lssdp_error("Cannot set multicast ttl: ");
-		close(sock);
-		return -1;
+		goto fail_and_close;
 	}
 
 
@@ -471,8 +470,7 @@ static int send_multicast_data(const char * data , lssdp_ctx*lssdp) {
 	               multicastAddr2->ai_family == PF_INET6 ? IPV6_MULTICAST_IF : IP_MULTICAST_IF,
 	               (char*)&iface, sizeof(iface)) != 0)  {
 		lssdp_error("Cannot set multicast interface");
-		close(sock);
-		return -1;
+		goto fail_and_close;
 	}
 
 
@@ -482,13 +480,22 @@ static int send_multicast_data(const char * data , lssdp_ctx*lssdp) {
 	if (sendto(sock, data, data_len, 0, multicastAddr2->ai_addr,
 	           multicastAddr2->ai_addrlen) == -1) {
 		lssdp_error("Error sending multicast data: ");
+		goto fail_and_close;
 	}
 
 
 	close(sock);
+	freeaddrinfo(multicastAddr2);
 
 	return 0;
 
+fail_and_close:
+	close(sock);
+
+fail:
+	freeaddrinfo(multicastAddr2);
+
+	return -1;
 }
 
 static int lssdp_send_response(lssdp_ctx * lssdp, struct sockaddr_in6 address) {
