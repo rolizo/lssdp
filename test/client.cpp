@@ -317,6 +317,8 @@ void mainLoop() {
             lssdp_socket_read(&lssdp);
         }
     }
+
+    lssdp_socket_close(&lssdp);
 }
 
 

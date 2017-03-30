@@ -68,6 +68,15 @@ void lssdp_init(lssdp_ctx * lssdp) {
 }
 
 
+int lssdp_socket_close(lssdp_ctx * lssdp) {
+	if (!lssdp)
+		return -1;
+	if (lssdp->sock >= 0)
+		close(lssdp->sock);
+
+	return 0;
+}
+
 // 02. lssdp_socket_create
 int lssdp_socket_create(lssdp_ctx * lssdp) {
 
