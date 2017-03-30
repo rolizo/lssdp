@@ -22,6 +22,8 @@ void render_screen();
 int ping_device(struct device*target);
 int add_device(lssdp_packet &packet);
 int remove_device(std::string barcode);
+void update_device_timestamp(std::string barcode);
+void remove_old_devices();
 device* find_device(t_device_list *container, std::string barcode);
 
 void log_callback(const char * file, const char * tag, int level, int line,
@@ -69,7 +71,7 @@ int parse_packet(struct lssdp_ctx * lssdp, const char * packet,
 
     if(strcmp("ssdp:alive",parsed_packet.nts) == 0) {
         add_device(parsed_packet);
-		//TODO if exists do update timestamp
+        update_device_timestamp(parsed_packet.usn);
     } else if(strcmp("ssdp:byebye",parsed_packet.nts) == 0) {
         std::string check_barcode = parsed_packet.usn;
         remove_device(check_barcode);
@@ -83,6 +85,19 @@ int parse_packet(struct lssdp_ctx * lssdp, const char * packet,
 
     return 0;
 }
+
+
+void  update_device_timestamp(std::string barcode) {
+
+    device*match = find_device(&device_list,barcode);
+
+    long long timestamp = get_current_time();
+    if (match) {
+        match->update_time = timestamp;
+        render_screen();
+    }
+}
+
 
 //returns 0 if device was removed
 //returns -1 if no device was removed
@@ -194,7 +209,8 @@ void print_devices() {
     t_device_list::iterator iter;
     for(iter = device_list.begin(); iter != device_list.end(); iter++) {
         count++;
-        printw("%d: %s\n" ,count ,(*iter)->barcode.c_str()) ;
+        int age = get_current_time() - (*iter)->update_time;
+        printw("%d: %s Age: %d\n" ,count ,(*iter)->barcode.c_str(), age/1000) ;
     }
 }
 
@@ -220,26 +236,39 @@ void render_screen() {
 
 void connect_device(struct device *ptr)
 {
-    if(is_device_unique(&paired_device_list,ptr->barcode)){
-		paired_device_list.push_back(ptr);
-	}
+    if(is_device_unique(&paired_device_list,ptr->barcode)) {
+        paired_device_list.push_back(ptr);
+    }
 }
 
 void disconnect_device(struct device *ptr) {
 
     if(!ptr)
-			return;
+        return;
 
     t_device_list::iterator iter;
     for(iter = paired_device_list.begin(); iter != paired_device_list.end();
             iter++) {
         if((*iter)->barcode == ptr->barcode) {
             paired_device_list.remove(*iter);
-			return;
+            return;
         }
     }
 }
 
+void remove_old_devices()
+{
+    t_device_list::iterator iter;
+    for(iter = device_list.begin(); iter != device_list.end();) {
+        int age = (get_current_time() - (*iter)->update_time)/1000;
+        if(age > ALIVE_TIMEOUT) {
+            iter = device_list.erase(iter);
+            continue;
+        }
+        iter++;
+    }
+
+}
 void mainLoop() {
 
     lssdp_ctx lssdp;
@@ -272,8 +301,8 @@ void mainLoop() {
         tv.tv_sec = 0;
         tv.tv_usec = 500 * 1000;   // 500 ms
 
-
-        //TODO: Remove devices which timed out from list
+        remove_old_devices();
+        render_screen();
 
         int ret = select(lssdp.sock + 1, &fs, NULL, NULL, &tv);
         if (ret < 0) {
@@ -285,7 +314,6 @@ void mainLoop() {
             lssdp_socket_read(&lssdp);
         }
     }
-
 }
 
 
@@ -295,6 +323,7 @@ int main() {
 
     initscr();			/* Start curses mode 		  */
     clear();
+    //leaveok(stdscr,true);
     std::thread t_MainThread(mainLoop);
     while(true) {
         std::string input;
@@ -302,22 +331,22 @@ int main() {
         char*pos;
         if((pos = strstr(in_buf,"add")) != 0) {
             struct device *tmp = get_device(&device_list, atoi(pos+3)-1);
-			if (tmp){
-				connect_device(tmp);
-				snprintf(out_buf,255,"Added device %d",atoi(pos+3));
-			}
-			else{
-				snprintf(out_buf,255,"Unknown device number");
-			}
+            if (tmp) {
+                connect_device(tmp);
+                snprintf(out_buf,255,"Added device %d",atoi(pos+3));
+            }
+            else {
+                snprintf(out_buf,255,"Unknown device number");
+            }
         } else if ((pos = strstr(in_buf,"rm")) != 0) {
             struct device *tmp = get_device(&paired_device_list, atoi(pos+2)-1);
-			if(tmp){
-				disconnect_device(tmp);
-				snprintf(out_buf,255,"Removed device %d",atoi(pos+2));
-			}
-			else {
-				snprintf(out_buf,255,"Unknown device number");
-			}
+            if(tmp) {
+                disconnect_device(tmp);
+                snprintf(out_buf,255,"Removed device %d",atoi(pos+2));
+            }
+            else {
+                snprintf(out_buf,255,"Unknown device number");
+            }
         } else {
             snprintf(out_buf,255,"Unknown command");
         }
