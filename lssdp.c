@@ -77,8 +77,8 @@ int lssdp_socket_create(lssdp_ctx * lssdp) {
 
 
 	struct addrinfo   hints  = { 0 };    /* Hints for name lookup */
-	struct addrinfo*  multicastAddr;     /* Multicast Address */
-	struct addrinfo*  localAddr;         /* Local address to bind to */
+	struct addrinfo*  multicastAddr = NULL;     /* Multicast Address */
+	struct addrinfo*  localAddr = NULL;         /* Local address to bind to */
 	int yes=1;
 
 
@@ -89,8 +89,8 @@ int lssdp_socket_create(lssdp_ctx * lssdp) {
 	if ((status = getaddrinfo(lssdp->config.ADDR_MULTICAST, NULL, &hints,
 	                          &multicastAddr)) != 0)
 	{
-		lssdp_error("getaddrinfo: %s\n", gai_strerror(status));
-		exit(1);
+		lssdp_error("Failed to get multicast address: %s\n", gai_strerror(status));
+		goto fail;
 	}
 
 
@@ -99,39 +99,38 @@ int lssdp_socket_create(lssdp_ctx * lssdp) {
 	hints.ai_family   = multicastAddr->ai_family;
 	hints.ai_socktype = SOCK_DGRAM;
 	hints.ai_flags    = AI_PASSIVE; /* Return an address we can bind to */
-	if ( getaddrinfo(NULL, lssdp->config.multicastPort, &hints, &localAddr) != 0 ) {
-		lssdp_error("Failed to get local address for destination\n");
-		exit(1);
+	if ((status = getaddrinfo(NULL, lssdp->config.multicastPort, &hints, &localAddr)) != 0 ) {
+		lssdp_error("Failed to get local address for destination: %s\n", gai_strerror(status));
+		goto fail;
 	}
 
 	if ( (lssdp->sock = socket(localAddr->ai_family, localAddr->ai_socktype,
 	                           0)) < 0 ) {
 		lssdp_error("Failed to create socket\n");
-		exit(1);
+		goto fail;
 	}
 
 	/* lose the pesky "Address already in use" error message */
 	if (setsockopt(lssdp->sock,SOL_SOCKET,SO_REUSEADDR,(char*)&yes,
 	               sizeof(int)) == -1) {
 		lssdp_error("Failed to set socket option\n");
-		exit(1);
+		goto fail_and_close;
 	}
 
 	unsigned char loop = 1;
 	setsockopt(lssdp->sock, IPPROTO_IP, IP_MULTICAST_LOOP, &loop, sizeof(loop));
 
-
 	// set non-blocking
 	int opt = 1;
 	if (ioctl(lssdp->sock, FIONBIO, &opt) != 0) {
 		lssdp_error("ioctl FIONBIO failed, errno = %s (%d)\n", strerror(errno), errno);
-		exit(1);
+		goto fail_and_close;
 	}
 
 	/* Bind to the multicast port */
 	if ( bind(lssdp->sock, localAddr->ai_addr, localAddr->ai_addrlen) != 0 ) {
 		lssdp_error("Failed to bind to multicast port\n");
-		exit(1);
+		goto fail_and_close;
 	}
 
 
@@ -156,7 +155,7 @@ int lssdp_socket_create(lssdp_ctx * lssdp) {
 		if ( setsockopt(lssdp->sock, IPPROTO_IP, IP_ADD_MEMBERSHIP,
 		                (char*) &multicastRequest, sizeof(multicastRequest)) != 0 ) {
 			lssdp_error("Failed to join ipv4 multicast address\n");
-			exit(1);
+			goto fail_and_close;
 		}
 	}
 	else if ( multicastAddr->ai_family  == PF_INET6 &&
@@ -177,20 +176,27 @@ int lssdp_socket_create(lssdp_ctx * lssdp) {
 		if ( setsockopt(lssdp->sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP,
 		                (char*) &multicastRequest, sizeof(multicastRequest)) != 0 ) {
 			lssdp_error("Failed to join ipv6 multicast address\n");
-			exit(1);
+			goto fail_and_close;
 		}
 	}
 	else {
 		lssdp_error("Failed to join multicast address\n");
-		exit(1);
+		goto fail_and_close;
 	}
 
 
 	freeaddrinfo(localAddr);
 	freeaddrinfo(multicastAddr);
 
-
 	return 0;
+
+fail_and_close:
+	close(lssdp->sock);
+fail:
+	freeaddrinfo(localAddr);
+	freeaddrinfo(multicastAddr);
+
+	return -1;
 }
 
 // 04. lssdp_socket_read
