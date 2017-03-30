@@ -193,13 +193,7 @@ void print_devices() {
     t_device_list::iterator iter;
     for(iter = device_list.begin(); iter != device_list.end(); iter++) {
         count++;
-        std::string status;
-        if( (*iter)->state ==  PAIRED) {
-            status = "PAIRED";
-        } else {
-            status = "UNREACHABLE";
-        }
-        printw("%d: %s %s\n" ,count ,(*iter)->barcode.c_str()  ,status.c_str()) ;
+        printw("%d: %s\n" ,count ,(*iter)->barcode.c_str()) ;
     }
 }
 
