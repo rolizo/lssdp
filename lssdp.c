@@ -89,7 +89,7 @@ int lssdp_socket_create(lssdp_ctx * lssdp) {
 	if ((status = getaddrinfo(lssdp->config.ADDR_MULTICAST, NULL, &hints,
 	                          &multicastAddr)) != 0)
 	{
-		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(status));
+		lssdp_error("getaddrinfo: %s\n", gai_strerror(status));
 		exit(1);
 	}
 
@@ -141,7 +141,7 @@ int lssdp_socket_create(lssdp_ctx * lssdp) {
 	if ( multicastAddr->ai_family  == PF_INET &&
 	        multicastAddr->ai_addrlen == sizeof(struct sockaddr_in6) ) /* IPv4 */
 	{
-		printf("Binding IPv4\n");
+		lssdp_debug("Binding IPv4\n");
 		struct ip_mreq multicastRequest;  /* Multicast address join structure */
 
 		/* Specify the multicast group */
@@ -162,7 +162,7 @@ int lssdp_socket_create(lssdp_ctx * lssdp) {
 	else if ( multicastAddr->ai_family  == PF_INET6 &&
 	          multicastAddr->ai_addrlen == sizeof(struct sockaddr_in6) ) /* IPv6 */
 	{
-		printf("Binding IPv6\n");
+		lssdp_debug("Binding IPv6\n");
 		struct ipv6_mreq multicastRequest;  /* Multicast address join structure */
 
 		/* Specify the multicast group */
@@ -223,7 +223,6 @@ int lssdp_socket_read(lssdp_ctx * lssdp) {
 		return 0;
 	}
 
-	printf("cheking search target\n");
 	// check search target
 	if (strcmp(packet.st, lssdp->header.search_target) != 0) {
 		// search target is not match
@@ -236,9 +235,9 @@ int lssdp_socket_read(lssdp_ctx * lssdp) {
 
 	// M-SEARCH: send RESPONSE back
 	if (strcmp(packet.method, MSEARCH) == 0) {
-		printf("Sending response\n");
+		lssdp_debug("Sending response\n");
 		lssdp_send_response(lssdp, address);
-		printf("Response sent\n");
+		lssdp_debug("Response sent\n");
 		return 0;
 	}
 
@@ -418,17 +417,17 @@ static int send_multicast_data(const char * data , lssdp_ctx*lssdp) {
 	                          lssdp->config.multicastPort, &hints,
 	                          &multicastAddr2)) != 0 )
 	{
-		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(status));
+		lssdp_error("getaddrinfo: %s\n", gai_strerror(status));
 	}
 
 
-	printf("Using %s\n", multicastAddr2->ai_family == PF_INET6 ? "IPv6" : "IPv4");
+	lssdp_info("Using %s\n", multicastAddr2->ai_family == PF_INET6 ? "IPv6" : "IPv4");
 
 
 	/* Create socket for sending multicast datagrams */
 	if ( (sock = socket(multicastAddr2->ai_family, multicastAddr2->ai_socktype,
 	                    0)) < 0 ) {
-		perror("Cannot create multicast socket: ");
+		lssdp_error("Cannot create multicast socket: ");
 		close(sock);
 		return -1;
 	}
@@ -443,7 +442,7 @@ static int send_multicast_data(const char * data , lssdp_ctx*lssdp) {
 	                multicastAddr2->ai_family == PF_INET6 ? IPPROTO_IPV6        : IPPROTO_IP,
 	                multicastAddr2->ai_family == PF_INET6 ? IPV6_MULTICAST_HOPS : IP_MULTICAST_TTL,
 	                (char*) &multicastTTL, sizeof(multicastTTL)) != 0 ) {
-		perror("Cannot set multicast ttl: ");
+		lssdp_error("Cannot set multicast ttl: ");
 		close(sock);
 		return -1;
 	}
@@ -456,7 +455,7 @@ static int send_multicast_data(const char * data , lssdp_ctx*lssdp) {
 	               multicastAddr2->ai_family == PF_INET6 ? IPPROTO_IPV6 : IPPROTO_IP,
 	               multicastAddr2->ai_family == PF_INET6 ? IPV6_MULTICAST_IF : IP_MULTICAST_IF,
 	               (char*)&iface, sizeof(iface)) != 0)  {
-		perror("Cannot set multicast interface");
+		lssdp_error("Cannot set multicast interface");
 		close(sock);
 		return -1;
 	}
@@ -467,8 +466,7 @@ static int send_multicast_data(const char * data , lssdp_ctx*lssdp) {
 	// 5. send data
 	if (sendto(sock, data, data_len, 0, multicastAddr2->ai_addr,
 	           multicastAddr2->ai_addrlen) == -1) {
-		perror("Error sending multicast data: ");
-		printf("Socket address: %d\n",sock);
+		lssdp_error("Error sending multicast data: ");
 	}
 
 
@@ -479,7 +477,7 @@ static int send_multicast_data(const char * data , lssdp_ctx*lssdp) {
 }
 
 static int lssdp_send_response(lssdp_ctx * lssdp, struct sockaddr_in6 address) {
-	printf("Now sending response Packet\n");
+	lssdp_info("Now sending response Packet\n");
 
 	// 2. set response packet
 	char response[LSSDP_BUFFER_LEN] = {};
@@ -515,7 +513,7 @@ static int lssdp_send_response(lssdp_ctx * lssdp, struct sockaddr_in6 address) {
 	if (sendto(lssdp->sock, response, response_len, 0, (struct sockaddr *)&address,
 	           sizeof(struct sockaddr_in6)) == -1) {
 		//    lssdp_error("send RESPONSE to %s failed, errno = %s (%d)\n", msearch_ip, strerror(errno), errno);
-		perror("send Response Failed: ");
+		lssdp_error("send Response Failed: ");
 		return -1;
 	}
 
@@ -525,7 +523,7 @@ static int lssdp_send_response(lssdp_ctx * lssdp, struct sockaddr_in6 address) {
 int lssdp_packet_parser(const char * data, size_t data_len,
                         lssdp_packet * packet) {
 
-	printf("Trying to parse packet\n");
+	lssdp_debug("Trying to parse packet\n");
 
 	if (data == NULL) {
 		lssdp_error("data should not be NULL\n");
