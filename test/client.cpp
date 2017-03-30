@@ -26,6 +26,8 @@ void update_device_timestamp(std::string barcode);
 void remove_old_devices();
 device* find_device(t_device_list *container, std::string barcode);
 
+static bool done = false; // flag to request end of main loop thread
+
 void log_callback(const char * file, const char * tag, int level, int line,
                   const char * func, const char * message) {
     std::string level_name = "DEBUG";
@@ -269,6 +271,7 @@ void remove_old_devices()
     }
 
 }
+
 void mainLoop() {
 
     lssdp_ctx lssdp;
@@ -293,7 +296,7 @@ void mainLoop() {
     lssdp_socket_create(&lssdp);
     lssdp_send_msearch(&lssdp);
 
-    for (;;) {
+    while (!done) {
         fd_set fs;
         FD_ZERO(&fs);
         FD_SET(lssdp.sock, &fs);
@@ -314,6 +317,8 @@ void mainLoop() {
             lssdp_socket_read(&lssdp);
         }
     }
+
+    lssdp_socket_close(&lssdp);
 }
 
 
@@ -347,7 +352,10 @@ int main() {
             else {
                 snprintf(out_buf,255,"Unknown device number");
             }
-        } else {
+       } else if ((pos = strstr(in_buf,"quit")) != 0) {
+            done = true;
+            break;
+       } else {
             snprintf(out_buf,255,"Unknown command");
         }
         render_screen();

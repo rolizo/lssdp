@@ -95,7 +95,8 @@ int main( int argc, char *argv[] ) {
         strncpy(lssdp.header.unique_service_name,"DUMMY_BARCODE",LSSDP_FIELD_LEN);
 
     }
-    lssdp_socket_create(&lssdp);
+    if (lssdp_socket_create(&lssdp) < 0)
+	exit(EXIT_FAILURE);
     lssdp_send_notify(&lssdp);
 
     //Capture CTRL-C and send bye before exiting
