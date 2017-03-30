@@ -16,7 +16,8 @@ typedef struct device
 	long long update_time;
 } device;
 
-std::list<device*> device_list;
-std::list<device*> paired_device_list;
+typedef std::list<device*> t_device_list;
+t_device_list device_list;
+t_device_list paired_device_list;
 
 #endif
