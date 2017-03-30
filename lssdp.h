@@ -102,26 +102,6 @@ typedef struct lssdp_ctx {
 
 
 
-/*
- * New Interface API
- * */
-
-
-/*
-
-int lssdp_start_service()
-int lssdp_stop_service()
-
-int lssdp_start_listen()
-int lssdp_stop_listen()
-
-
-//Callback for found
-//Callback for lost
-
-
-*/
-
 //Set default values of lssdp
 void lssdp_init(lssdp_ctx * lssdp);
 
@@ -131,7 +111,7 @@ int lssdp_socket_create(lssdp_ctx * lssdp);
 int lssdp_socket_close(lssdp_ctx * lssdp);
 
 /*
- * 04. lssdp_socket_read
+ * lssdp_socket_read
  *
  * read SSDP socket.
  *
