@@ -69,6 +69,7 @@ int parse_packet(struct lssdp_ctx * lssdp, const char * packet,
 
     if(strcmp("ssdp:alive",parsed_packet.nts) == 0) {
         add_device(parsed_packet);
+		//TODO if exists do update timestamp
     } else if(strcmp("ssdp:byebye",parsed_packet.nts) == 0) {
         std::string check_barcode = parsed_packet.usn;
         remove_device(check_barcode);
@@ -300,19 +301,27 @@ int main() {
         getstr(in_buf);
         char*pos;
         if((pos = strstr(in_buf,"add")) != 0) {
-            snprintf(out_buf,255,"Added device %d",atoi(pos+3));
             struct device *tmp = get_device(&device_list, atoi(pos+3)-1);
-            connect_device(tmp);
+			if (tmp){
+				connect_device(tmp);
+				snprintf(out_buf,255,"Added device %d",atoi(pos+3));
+			}
+			else{
+				snprintf(out_buf,255,"Unknown device number");
+			}
         } else if ((pos = strstr(in_buf,"rm")) != 0) {
             struct device *tmp = get_device(&paired_device_list, atoi(pos+2)-1);
-            disconnect_device(tmp);
-            snprintf(out_buf,255,"Removed device %d",atoi(pos+2));
+			if(tmp){
+				disconnect_device(tmp);
+				snprintf(out_buf,255,"Removed device %d",atoi(pos+2));
+			}
+			else {
+				snprintf(out_buf,255,"Unknown device number");
+			}
         } else {
             snprintf(out_buf,255,"Unknown command");
         }
-
         render_screen();
-
     }
 
     t_MainThread.join();
@@ -320,10 +329,6 @@ int main() {
     // Main Loop
 
     endwin();
-
-
-
-
 
     return EXIT_SUCCESS;
 }
