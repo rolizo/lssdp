@@ -23,7 +23,10 @@ make clean
 make
 
 cd test
-./daemon.exe
+./client.exe
+
+on a other machine
+./service.exe <identification_id>
 ```
 
 ====
@@ -36,15 +39,7 @@ lssdp context
 
 **sock** - SSDP socket, created by `lssdp_socket_create`, and close by `lssdp_socket_close`
 
-**neighbor_list** - neighbor list, when received *NOTIFY* or *RESPONSE* packet, neighbor list will be updated.
-
-**neighbor_timeout** - this value will be used by `lssdp_neighbor_check_timeout`. If neighbor is timeout, then remove from neighbor list.
-
 **debug** - SSDP debug mode, show debug message.
-
-**interface** - Network Interface list. Call `lssdp_network_interface_update` to update the list.
-
-**interface_num** - the number of Network Interface list.
 
 **header.search_target** - SSDP Search Target (ST). A potential search target.
 
@@ -66,16 +61,7 @@ lssdp context
 
 #### Function API (8)
 
-##### 01. lssdp_network_interface_update
-
-update network interface.
-
-```
-- lssdp.interface, lssdp.interface_num will be updated.
-```
-
-
-##### 02. lssdp_socket_create
+##### lssdp_socket_create
 
 create SSDP socket.
 
@@ -87,7 +73,7 @@ create SSDP socket.
 - SSDP neighbor list will be force clean up.
 ```
 
-##### 03. lssdp_socket_close
+##### lssdp_socket_close
 
 close SSDP socket.
 
@@ -96,7 +82,7 @@ close SSDP socket.
 - SSDP neighbor list will be force clean up.
 ```
 
-##### 04. lssdp_socket_read
+##### lssdp_socket_read
 
 read SSDP socket.
 
@@ -112,33 +98,24 @@ read SSDP socket.
 - SSDP socket and port must be setup ready before call this function. (sock, port > 0)
 - if SSDP neighbor list has been changed, neighbor_list_changed_callback will be invoked.
 ```
+##### lssdp_send_byebye
 
-##### 05. lssdp_send_msearch
+##### lssdp_send_msearch
 
-send SSDP M-SEARCH packet to multicast address (239.255.255.250)
-
-```
-- SSDP port must be setup ready before call this function. (lssdp.port > 0)
-```
-
-##### 06. lssdp_send_notify
-
-send SSDP NOTIFY packet to multicast address (239.255.255.250)
+send SSDP M-SEARCH packet to multicast address
 
 ```
 - SSDP port must be setup ready before call this function. (lssdp.port > 0)
 ```
 
-##### 07. lssdp_neighbor_check_timeout
+##### lssdp_send_notify
 
-check neighbor in list is timeout or not. (lssdp.neighbor_timeout)
-
-the timeout neighbor will be remove from the list.
+send SSDP NOTIFY packet to multicast address
 
 ```
-- if neighbor be removed, neighbor_list_changed_callback will be invoked.
+- SSDP port must be setup ready before call this function. (lssdp.port > 0)
 ```
 
-##### 08. lssdp_set_log_callback
+##### lssdp_set_log_callback
 
 setup SSDP log callback. All SSDP library log will be forward to here.
