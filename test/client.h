@@ -2,6 +2,9 @@
 #define CLIENT_H
 
 
+#define ALIVE_TIMEOUT 10
+
+
 #include <string>
 #include <list>
 
