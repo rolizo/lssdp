@@ -216,7 +216,7 @@ int lssdp_socket_read(lssdp_ctx * lssdp) {
 	}
 
 	// check socket and port
-	if (lssdp->sock <= 0) {
+	if (lssdp->sock < 0) {
 		lssdp_error("SSDP socket (%d) has not been setup.\n", lssdp->sock);
 		return -1;
 	}
