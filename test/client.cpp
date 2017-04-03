@@ -9,6 +9,7 @@
 #include <thread>
 #include <iostream>
 #include <curses.h>
+#include <ncurses.h>
 
 #include "lssdp.h"
 #include "client.h"
@@ -26,7 +27,12 @@ void update_device_timestamp(std::string barcode);
 void remove_old_devices();
 device* find_device(t_device_list *container, std::string barcode);
 
+
+WINDOW *device_win;
+WINDOW *local_win;
+
 static bool done = false; // flag to request end of main loop thread
+
 
 void log_callback(const char * file, const char * tag, int level, int line,
                   const char * func, const char * message) {
@@ -112,9 +118,7 @@ int remove_device(std::string barcode) {
         render_screen();
         return 0;
     }
-
     return -1;
-
 }
 
 
@@ -186,7 +190,7 @@ void print_paired_devices() {
         } else {
             status = "UNREACHABLE";
         }
-        printw("%d: %s %s\n" ,count ,(*iter)->barcode.c_str()  ,status.c_str()) ;
+        wprintw(device_win," %d: %s %s\n" ,count ,(*iter)->barcode.c_str(), status.c_str());
     }
 }
 
@@ -212,27 +216,37 @@ void print_devices() {
     for(iter = device_list.begin(); iter != device_list.end(); iter++) {
         count++;
         int age = get_current_time() - (*iter)->update_time;
-        printw("%d: %s Age: %d\n" ,count ,(*iter)->barcode.c_str(), age/1000) ;
+        wprintw(device_win," %d: age: %d, %s\n" ,count ,age/1000, (*iter)->barcode.c_str());
     }
+}
+
+
+void render_local_screen() {
+    wclear(local_win);
+    wprintw(local_win,"\n");
+    wprintw(local_win," Last command: %s\n", out_buf);
+    wborder(local_win, '|', '|', '-', '-', '+', '+', '+', '+');
+    wrefresh(local_win);
 }
 
 void render_screen() {
 
-    clear();
-    printw("--Avaliable Device List---\n");
+    wclear(device_win);
+
+    wprintw(device_win,"\n------- Avaliable Device List -------\n");
     print_devices();
-    printw("-- End Device List---\n");
+    wprintw(device_win,"\n--------- End Device List -----------\n");
 
 
-    printw("\n\n\n");
+    wprintw(device_win,"\n\n\n");
 
-    printw("--Paired Device List---\n");
+    wprintw(device_win,"-------- Paired Device List --------\n");
     print_paired_devices();
-    printw("-- End Device List---\n");
+    wprintw(device_win,"\n--------- End Device List ----------\n");
     //print other list
+    wborder(device_win, '|', '|', '-', '-', '+', '+', '+', '+');
 
-    printw("Last command: %s\n", out_buf);
-    refresh();			/* Print it on to the real screen */
+    wrefresh(device_win);			/* Print it on to the real screen */
 }
 
 
@@ -296,6 +310,7 @@ void mainLoop() {
     lssdp_socket_create(&lssdp);
     lssdp_send_msearch(&lssdp);
 
+
     while (!done) {
         fd_set fs;
         FD_ZERO(&fs);
@@ -322,19 +337,32 @@ void mainLoop() {
 }
 
 
-
 int main() {
 
 
     initscr();			/* Start curses mode 		  */
     clear();
-    //leaveok(stdscr,true);
+
+
+    int startx, starty, width, height;
+    height = 30;
+    width  = 80;
+    starty = 0;
+    startx = 0;
+
+    device_win = newwin(height, width, starty, startx);
+    local_win = newwin(4, width, starty+height+4, startx);
+
+    render_screen();
+    render_local_screen();
+
     std::thread t_MainThread(mainLoop);
     while(true) {
         std::string input;
-        getstr(in_buf);
+        wgetstr(local_win,in_buf);
         char*pos;
         if((pos = strstr(in_buf,"add")) != 0) {
+
             struct device *tmp = get_device(&device_list, atoi(pos+3)-1);
             if (tmp) {
                 connect_device(tmp);
@@ -359,11 +387,10 @@ int main() {
             snprintf(out_buf,255,"Unknown command");
         }
         render_screen();
+        render_local_screen();
     }
 
     t_MainThread.join();
-
-    // Main Loop
 
     endwin();
 
