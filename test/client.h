@@ -2,7 +2,7 @@
 #define CLIENT_H
 
 
-#define ALIVE_TIMEOUT 10
+#define ALIVE_TIMEOUT 60
 
 
 #include <string>
