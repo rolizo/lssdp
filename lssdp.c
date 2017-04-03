@@ -36,16 +36,16 @@
 #define lssdp_warn(fmt, agrs...)  lssdp_log(LSSDP_LOG_WARN,  __LINE__, __func__, fmt, ##agrs)
 #define lssdp_error(fmt, agrs...) lssdp_log(LSSDP_LOG_ERROR, __LINE__, __func__, fmt, ##agrs)
 
-const char * HEADER_MSEARCH = "M-SEARCH * HTTP/1.1\r\n";
-const char * HEADER_NOTIFY  = "NOTIFY * HTTP/1.1\r\n";
-const char * HEADER_RESPONSE = "HTTP/1.1 200 OK\r\n";
-const char * RESPONSE =  "RESPONSE";
-const char * MSEARCH  =  "M-SEARCH";
-const char * NOTIFY  =  "NOTIFY";
+static const char * HEADER_MSEARCH = "M-SEARCH * HTTP/1.1\r\n";
+static const char * HEADER_NOTIFY  = "NOTIFY * HTTP/1.1\r\n";
+static const char * HEADER_RESPONSE = "HTTP/1.1 200 OK\r\n";
+static const char * RESPONSE =  "RESPONSE";
+static const char * MSEARCH  =  "M-SEARCH";
+static const char * NOTIFY  =  "NOTIFY";
 
 
-void (* _log_callback)(const char * file, const char * tag, int level, int line,
-                       const char * func, const char * message);
+static void (* _log_callback)(const char * file, const char * tag, int level, int line,
+                       const char * func, const char * message) = NULL;
 
 
 /** Internal Function **/
@@ -216,7 +216,7 @@ int lssdp_socket_read(lssdp_ctx * lssdp) {
 	}
 
 	// check socket and port
-	if (lssdp->sock <= 0) {
+	if (lssdp->sock < 0) {
 		lssdp_error("SSDP socket (%d) has not been setup.\n", lssdp->sock);
 		return -1;
 	}
