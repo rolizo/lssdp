@@ -8,6 +8,9 @@
 #include <string>
 #include <signal.h>
 
+
+#define RESEND_INTERVAL 30
+
 static volatile int keepRunning = 1;
 
 void intHandler(int dummy) {
@@ -38,6 +41,7 @@ long long get_current_time() {
 
 void print_lssdp_packet(lssdp_packet &parsed_packet) {
 
+    	
     printf("---------------------------------------------------\n");
     printf("METHOD: %s\n",parsed_packet.method);
     printf("ST: %s\n",parsed_packet.st);
@@ -101,6 +105,8 @@ int main( int argc, char *argv[] ) {
 
     //Capture CTRL-C and send bye before exiting
     signal(SIGINT, intHandler);
+    
+    long long timelast = get_current_time();
 
     // Main Loop
     while (keepRunning) {
@@ -116,6 +122,12 @@ int main( int argc, char *argv[] ) {
             printf("select error, ret = %d\n", ret);
             break;
         }
+
+	if((get_current_time() - timelast) > RESEND_INTERVAL*1000){
+    		timelast = get_current_time();
+    		lssdp_send_notify(&lssdp);
+
+	}
 
         if (ret > 0) {
             lssdp_socket_read(&lssdp);
