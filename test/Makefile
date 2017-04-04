@@ -3,9 +3,9 @@ CXX ?= g++
 CFLAGS ?= -g -Og -std=c99 -Wall -Werror -I../
 CXXFLAGS ?= -g -Og -std=c++11 -Wall -Werror -I../
 
-OBJS = ../lssdp.o
+#OBJS = ../lssdp.o
 EXE = .exe
-BINS = client$(EXE) service$(EXE) 
+BINS = client$(EXE) service$(EXE)
 
 all: $(BINS)
 
@@ -13,10 +13,10 @@ packet_listener: $(OBJS) packet_listener.o
 	$(CXX) $(CXXFLAGS) -o $@.exe $@.o $(OBJS)
 
 client$(EXE): client.o $(OBJS)
-	$(CXX) $(CXXFLAGS) -o $@ $< $(OBJS) -lpthread -lncurses
+	$(CXX) -pthread $(CXXFLAGS) -o $@ $< $(OBJS) -lncurses -L.. -llssdp
 
 service$(EXE): service.o $(OBJS)
-	$(CXX) $(CXXFLAGS) -o $@ $< $(OBJS)
+	$(CXX) $(CXXFLAGS) -o $@ $< $(OBJS) -L.. -llssdp
 
 clean:
 	rm -rf *.o $(BINS)
