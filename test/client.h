@@ -17,6 +17,7 @@ typedef struct device
 	std::string barcode;
 	std::string location;
 	long long update_time;
+	int max_age;
 } device;
 
 typedef std::list<device*> t_device_list;

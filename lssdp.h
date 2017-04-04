@@ -65,6 +65,7 @@ typedef struct lssdp_packet {
 	/* Additional SSDP Header Fields */
 	char            sm_id       [LSSDP_FIELD_LEN];
 	char            device_type [LSSDP_FIELD_LEN];
+	int max_age;
 	long long       update_time;
 } lssdp_packet;
 
