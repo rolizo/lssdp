@@ -76,6 +76,7 @@ struct t_header {
 	/* SSDP Standard Header Fields */
 	char search_target       [LSSDP_FIELD_LEN];  // Search Target
 	char unique_service_name [LSSDP_FIELD_LEN];  // Unique Service Name: MAC or User Name
+	int max_age;
 	struct t_location location;
 	/* Additional SSDP Header Fields */
 	char sm_id       [LSSDP_FIELD_LEN];

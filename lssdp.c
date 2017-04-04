@@ -65,6 +65,7 @@ void lssdp_init(lssdp_ctx * lssdp) {
 	lssdp->config.multicastPort  = "1900";
 	lssdp->config.ADDR_LOCALHOST = "127.0.0.1";
 	lssdp->config.ADDR_MULTICAST = "239.255.255.250";
+	lssdp->header.max_age = 10;
 }
 
 
@@ -315,7 +316,7 @@ int lssdp_send_byebye(lssdp_ctx * lssdp) {
 	snprintf(notify, sizeof(notify),
 	         "%s"
 	         "HOST:%s:%d\r\n"
-	         "CACHE-CONTROL:max-age=10\r\n"
+	         "CACHE-CONTROL:max-age=%d\r\n"
 	         "LOCATION:%s%s%s\r\n"
 	         "SERVER:OS/version product/version\r\n"
 	         "NT:%s\r\n"
@@ -326,6 +327,7 @@ int lssdp_send_byebye(lssdp_ctx * lssdp) {
 	         "\r\n",
 	         HEADER_NOTIFY,                              // HEADER
 	         lssdp->config.ADDR_MULTICAST, lssdp->port,  // HOST
+	         lssdp->header.max_age,              // LOCATION
 	         lssdp->header.location.prefix,              // LOCATION
 	         lssdp->header.location.domain,              // LOCATION
 	         lssdp->header.location.suffix,
@@ -361,7 +363,7 @@ int lssdp_send_notify(lssdp_ctx * lssdp) {
 	snprintf(notify, sizeof(notify),
 	         "%s"
 	         "HOST:%s:%d\r\n"
-	         "CACHE-CONTROL:max-age=10\r\n"
+	         "CACHE-CONTROL:max-age=%d\r\n"
 	         "LOCATION:%s%s%s\r\n"
 	         "SERVER:OS/version product/version\r\n"
 	         "NT:%s\r\n"
@@ -372,6 +374,7 @@ int lssdp_send_notify(lssdp_ctx * lssdp) {
 	         "\r\n",
 	         HEADER_NOTIFY,                              // HEADER
 	         lssdp->config.ADDR_MULTICAST, lssdp->port,  // HOST
+	         lssdp->header.max_age,              // LOCATION
 	         lssdp->header.location.prefix,              // LOCATION
 	         lssdp->header.location.domain,              // LOCATION
 	         lssdp->header.location.suffix,
@@ -506,7 +509,7 @@ static int lssdp_send_response(lssdp_ctx * lssdp, struct sockaddr_in6 address) {
 	// not used: char * domain = lssdp->header.location.domain;
 	int response_len = snprintf(response, sizeof(response),
 	                            "%s"
-	                            "CACHE-CONTROL:max-age=10\r\n"
+	                            "CACHE-CONTROL:max-age=%d\r\n"
 	                            "DATE:\r\n"
 	                            "EXT:\r\n"
 	                            "LOCATION:%s%s%s\r\n"
@@ -517,6 +520,7 @@ static int lssdp_send_response(lssdp_ctx * lssdp, struct sockaddr_in6 address) {
 	                            "DEV_TYPE:%s\r\n"
 	                            "\r\n",
 	                            HEADER_RESPONSE,                     // HEADER
+				    lssdp->header.max_age,
 	                            lssdp->header.location.prefix,              // LOCATION
 	                            lssdp->header.location.domain,
 	                            lssdp->header.location.suffix,
