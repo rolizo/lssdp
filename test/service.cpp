@@ -84,7 +84,7 @@ int main( int argc, char *argv[] ) {
     lssdp_set_log_callback(log_callback);
     lssdp.config.ADDR_LOCALHOST = "::1";
     lssdp.config.ADDR_MULTICAST = "FF02::C";
-    lssdp.header.max_age = RESEND_INTERVAL/2;
+    lssdp.header.max_age = RESEND_INTERVAL*2;
 
     strncpy(lssdp.header.location.prefix,"http://\0",LSSDP_FIELD_LEN);
     strncpy(lssdp.header.location.domain,"test_location",LSSDP_FIELD_LEN);
