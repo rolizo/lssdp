@@ -36,74 +36,74 @@ static bool done = false; // flag to request end of main loop thread
 
 void log_callback(const char * file, const char * tag, int level, int line,
                   const char * func, const char * message) {
-    std::string level_name = "DEBUG";
-    if (level == LSSDP_LOG_INFO)   level_name = "INFO";
-    if (level == LSSDP_LOG_WARN)   level_name = "WARN";
-    if (level == LSSDP_LOG_ERROR)  level_name = "ERROR";
+	std::string level_name = "DEBUG";
+	if (level == LSSDP_LOG_INFO)   level_name = "INFO";
+	if (level == LSSDP_LOG_WARN)   level_name = "WARN";
+	if (level == LSSDP_LOG_ERROR)  level_name = "ERROR";
 
 //	printf("[%-5s][%s] %s", level_name.c_str(), tag, message);
 }
 
 long long get_current_time() {
-    struct timeval time = {};
-    if (gettimeofday(&time, NULL) == -1) {
-        //printf("gettimeofday failed, errno = %s (%d)\n", strerror(errno), errno);
-        return -1;
-    }
-    return (long long) time.tv_sec * 1000 + (long long) time.tv_usec / 1000;
+	struct timeval time = {};
+	if (gettimeofday(&time, NULL) == -1) {
+		//printf("gettimeofday failed, errno = %s (%d)\n", strerror(errno), errno);
+		return -1;
+	}
+	return (long long) time.tv_sec * 1000 + (long long) time.tv_usec / 1000;
 }
 
 void print_lssdp_packet(lssdp_packet &parsed_packet) {
 
-    printf("---------------------------------------------------\n");
-    printf("METHOD: %s\n",parsed_packet.method);
-    printf("ST: %s\n",parsed_packet.st);
-    printf("USN: %s\n",parsed_packet.usn);
-    printf("LOCATION: %s\n",parsed_packet.location);
-    printf("SM_ID: %s\n",parsed_packet.sm_id);
-    printf("DEVICE: %s\n",parsed_packet.device_type);
-    printf("NTS: %s\n",parsed_packet.nts);
-    printf("---------------------------------------------------\n");
+	printf("---------------------------------------------------\n");
+	printf("METHOD: %s\n",parsed_packet.method);
+	printf("ST: %s\n",parsed_packet.st);
+	printf("USN: %s\n",parsed_packet.usn);
+	printf("LOCATION: %s\n",parsed_packet.location);
+	printf("SM_ID: %s\n",parsed_packet.sm_id);
+	printf("DEVICE: %s\n",parsed_packet.device_type);
+	printf("NTS: %s\n",parsed_packet.nts);
+	printf("---------------------------------------------------\n");
 }
 
 int parse_packet(struct lssdp_ctx * lssdp, const char * packet,
                  size_t packet_len) {
 
-    lssdp_packet parsed_packet = {};
-    if (lssdp_packet_parser(packet, packet_len, &parsed_packet) != 0) {
-        printf("Failed to parse packet");
-        return -1;
-    }
+	lssdp_packet parsed_packet = {};
+	if (lssdp_packet_parser(packet, packet_len, &parsed_packet) != 0) {
+		printf("Failed to parse packet");
+		return -1;
+	}
 
-    //print_lssdp_packet(parsed_packet);
+	//print_lssdp_packet(parsed_packet);
 
-    if(strcmp("ssdp:alive",parsed_packet.nts) == 0) {
-        add_device(parsed_packet);
-        update_device_timestamp(parsed_packet.usn);
-    } else if(strcmp("ssdp:byebye",parsed_packet.nts) == 0) {
-        std::string check_barcode = parsed_packet.usn;
-        remove_device(check_barcode);
-    } else if (strcmp("ssdp:all",parsed_packet.nts) == 0) {
-    } else if (strcmp( parsed_packet.method,"RESPONSE") == 0) {
-        add_device(parsed_packet);
-    } else 	{
-        return -1;
-        //printf("UNSUPPORTED PACKET\n\n");
-    }
+	if(strcmp("ssdp:alive",parsed_packet.nts) == 0) {
+		add_device(parsed_packet);
+		update_device_timestamp(parsed_packet.usn);
+	} else if(strcmp("ssdp:byebye",parsed_packet.nts) == 0) {
+		std::string check_barcode = parsed_packet.usn;
+		remove_device(check_barcode);
+	} else if (strcmp("ssdp:all",parsed_packet.nts) == 0) {
+	} else if (strcmp( parsed_packet.method,"RESPONSE") == 0) {
+		add_device(parsed_packet);
+	} else 	{
+		return -1;
+		//printf("UNSUPPORTED PACKET\n\n");
+	}
 
-    return 0;
+	return 0;
 }
 
 
 void  update_device_timestamp(std::string barcode) {
 
-    device*match = find_device(&device_list,barcode);
+	device*match = find_device(&device_list,barcode);
 
-    long long timestamp = get_current_time();
-    if (match) {
-        match->update_time = timestamp;
-        render_screen();
-    }
+	long long timestamp = get_current_time();
+	if (match) {
+		match->update_time = timestamp;
+		render_screen();
+	}
 }
 
 
@@ -111,14 +111,14 @@ void  update_device_timestamp(std::string barcode) {
 //returns -1 if no device was removed
 int remove_device(std::string barcode) {
 
-    device*match = find_device(&device_list,barcode);
+	device*match = find_device(&device_list,barcode);
 
-    if (match) {
-        device_list.remove(match);
-        render_screen();
-        return 0;
-    }
-    return -1;
+	if (match) {
+		device_list.remove(match);
+		render_screen();
+		return 0;
+	}
+	return -1;
 }
 
 
@@ -126,53 +126,54 @@ int remove_device(std::string barcode) {
 //Returns Null if not found
 device* find_device(t_device_list *container, std::string barcode) {
 
-    t_device_list::iterator iter;
-    for(iter = container->begin(); iter != container->end(); iter++) {
-        if((*iter)->barcode == barcode) {
-            return (*iter);
-        }
-    }
-    return NULL;
+	t_device_list::iterator iter;
+	for(iter = container->begin(); iter != container->end(); iter++) {
+		if((*iter)->barcode == barcode) {
+			return (*iter);
+		}
+	}
+	return NULL;
 }
 
 
 bool is_device_unique(t_device_list *container,std::string barcode) {
 
-    if(find_device(container,barcode))
-        return false;
-    return true;
+	if(find_device(container,barcode))
+		return false;
+	return true;
 }
 
 int add_device(lssdp_packet &packet) {
 
-    std::string check_barcode = packet.usn;
-    if(!is_device_unique(&device_list,check_barcode)) {
-        return -1;
-    }
+	std::string check_barcode = packet.usn;
+	if(!is_device_unique(&device_list,check_barcode)) {
+		return -1;
+	}
 
-    device *ptr = new device();
-    ptr->state=UNREACHABLE;
-    ptr->barcode=packet.usn;
-    ptr->update_time=packet.update_time;
-    device_list.push_back(ptr);
+	device *ptr = new device();
+	ptr->state=UNREACHABLE;
+	ptr->barcode=packet.usn;
+	ptr->update_time=packet.update_time;
+	ptr->max_age = packet.max_age;
+	device_list.push_back(ptr);
 
-    render_screen();
-    return 0;
+	render_screen();
+	return 0;
 }
 
 
 int ping_device(struct device*target) {
 
 
-    return 0;
+	return 0;
 }
 
 void ping_devices() {
 
-    t_device_list::iterator iter;
-    for(iter = device_list.begin(); iter != device_list.end(); iter++) {
-        ping_device(*iter);
-    }
+	t_device_list::iterator iter;
+	for(iter = device_list.begin(); iter != device_list.end(); iter++) {
+		ping_device(*iter);
+	}
 
 }
 
@@ -180,219 +181,226 @@ void ping_devices() {
 
 void print_paired_devices() {
 
-    int count = 0;
-    t_device_list::iterator iter;
-    for(iter = paired_device_list.begin(); iter != paired_device_list.end(); iter++) {
-        count++;
-        std::string status;
-        if( (*iter)->state ==  PAIRED) {
-            status = "PAIRED";
-        } else {
-            status = "UNREACHABLE";
-        }
-        wprintw(device_win," %d: %s %s\n" ,count ,(*iter)->barcode.c_str(), status.c_str());
-    }
+	int count = 0;
+	t_device_list::iterator iter;
+	for(iter = paired_device_list.begin(); iter != paired_device_list.end();
+	        iter++) {
+		count++;
+		std::string status;
+		if( (*iter)->state ==  PAIRED) {
+			status = "PAIRED";
+		} else {
+			status = "UNREACHABLE";
+		}
+		wprintw(device_win," %d: %s %s\n" ,count ,(*iter)->barcode.c_str(),
+		        status.c_str());
+	}
 }
 
 struct device * get_device(t_device_list *container ,unsigned int index) {
 
-    if (container->size() > index)
-    {
-        t_device_list::iterator it = container->begin();
-        std::advance(it, index);
-        return *it;    // 'it' points to the element at index 'N'
-    }
+	if (container->size() > index)
+	{
+		t_device_list::iterator it = container->begin();
+		std::advance(it, index);
+		return *it;    // 'it' points to the element at index 'N'
+	}
 
 
-    return NULL;
+	return NULL;
 
 }
 
 
 void print_devices() {
 
-    int count = 0;
-    t_device_list::iterator iter;
-    for(iter = device_list.begin(); iter != device_list.end(); iter++) {
-        count++;
-        int age = get_current_time() - (*iter)->update_time;
-        wprintw(device_win," %d: age: %d, %s\n" ,count ,age/1000, (*iter)->barcode.c_str());
-    }
+	int count = 0;
+	t_device_list::iterator iter;
+	for(iter = device_list.begin(); iter != device_list.end(); iter++) {
+		count++;
+		int age = get_current_time() - (*iter)->update_time;
+		wprintw(device_win," %d: age: %d/%d, %s\n" ,count ,age/1000,(*iter)->max_age,
+		        (*iter)->barcode.c_str());
+	}
 }
 
 
 void render_local_screen() {
-    wclear(local_win);
-    wprintw(local_win,"\n");
-    wprintw(local_win," Last command: %s\n", out_buf);
-    wborder(local_win, '|', '|', '-', '-', '+', '+', '+', '+');
-    wrefresh(local_win);
+	wclear(local_win);
+	wprintw(local_win,"\n");
+	wprintw(local_win," Last command: %s\n", out_buf);
+	wborder(local_win, '|', '|', '-', '-', '+', '+', '+', '+');
+	wrefresh(local_win);
 }
 
 void render_screen() {
 
-    wclear(device_win);
+	wclear(device_win);
 
-    wprintw(device_win,"\n------- Avaliable Device List -------\n");
-    print_devices();
-    wprintw(device_win,"\n--------- End Device List -----------\n");
+	wprintw(device_win,
+	        "\n--------------------------- Avaliable Device List -----------------------------\n");
+	print_devices();
+	wprintw(device_win,
+	        "\n---------------------------- End Device List ----------------------------------\n");
 
 
-    wprintw(device_win,"\n\n\n");
+	wprintw(device_win,"\n\n\n");
 
-    wprintw(device_win,"-------- Paired Device List --------\n");
-    print_paired_devices();
-    wprintw(device_win,"\n--------- End Device List ----------\n");
-    //print other list
-    wborder(device_win, '|', '|', '-', '-', '+', '+', '+', '+');
+	wprintw(device_win,
+	        "----------------------------- Paired Device List --------------------------------\n");
+	print_paired_devices();
+	wprintw(device_win,
+	        "\n---------------------------- End Device List ----------------------------------\n");
+	//print other list
+	wborder(device_win, '|', '|', '-', '-', '+', '+', '+', '+');
 
-    wrefresh(device_win);			/* Print it on to the real screen */
+	wrefresh(device_win);			/* Print it on to the real screen */
 }
 
 
 void connect_device(struct device *ptr)
 {
-    if(is_device_unique(&paired_device_list,ptr->barcode)) {
-        paired_device_list.push_back(ptr);
-    }
+	if(is_device_unique(&paired_device_list,ptr->barcode)) {
+		paired_device_list.push_back(ptr);
+	}
 }
 
 void disconnect_device(struct device *ptr) {
 
-    if(!ptr)
-        return;
+	if(!ptr)
+		return;
 
-    t_device_list::iterator iter;
-    for(iter = paired_device_list.begin(); iter != paired_device_list.end();
-            iter++) {
-        if((*iter)->barcode == ptr->barcode) {
-            paired_device_list.remove(*iter);
-            return;
-        }
-    }
+	t_device_list::iterator iter;
+	for(iter = paired_device_list.begin(); iter != paired_device_list.end();
+	        iter++) {
+		if((*iter)->barcode == ptr->barcode) {
+			paired_device_list.remove(*iter);
+			return;
+		}
+	}
 }
 
 void remove_old_devices()
 {
-    t_device_list::iterator iter;
-    for(iter = device_list.begin(); iter != device_list.end();) {
-        int age = (get_current_time() - (*iter)->update_time)/1000;
-        if(age > ALIVE_TIMEOUT) {
-            iter = device_list.erase(iter);
-            continue;
-        }
-        iter++;
-    }
+	t_device_list::iterator iter;
+	for(iter = device_list.begin(); iter != device_list.end();) {
+		int age = (get_current_time() - (*iter)->update_time)/1000;
+		if(age > (*iter)->max_age) {
+			iter = device_list.erase(iter);
+			continue;
+		}
+		iter++;
+	}
 
 }
 
 void mainLoop() {
 
-    lssdp_ctx lssdp;
-    lssdp.port = 1900;
-    lssdp.debug = false;
-    lssdp.packet_received_callback  = parse_packet;
+	lssdp_ctx lssdp;
+	lssdp.port = 1900;
+	lssdp.debug = false;
+	lssdp.packet_received_callback  = parse_packet;
 
-    lssdp_init(&lssdp);
+	lssdp_init(&lssdp);
 
-    lssdp.config.ADDR_LOCALHOST = "::1";
-    lssdp.config.ADDR_MULTICAST = "FF02::C";
-    lssdp_set_log_callback(log_callback);
+	lssdp.config.ADDR_LOCALHOST = "::1";
+	lssdp.config.ADDR_MULTICAST = "FF02::C";
+	lssdp_set_log_callback(log_callback);
 
-    strncpy(lssdp.header.location.prefix,"http://\0",LSSDP_FIELD_LEN);
-    strncpy(lssdp.header.location.domain,"test_location",LSSDP_FIELD_LEN);
-    strncpy(lssdp.header.location.suffix,":8082\0",LSSDP_FIELD_LEN);
+	strncpy(lssdp.header.location.prefix,"http://\0",LSSDP_FIELD_LEN);
+	strncpy(lssdp.header.location.domain,"test_location",LSSDP_FIELD_LEN);
+	strncpy(lssdp.header.location.suffix,":8082\0",LSSDP_FIELD_LEN);
 
-    strncpy(lssdp.header.search_target,"commend_switchbox\0",LSSDP_FIELD_LEN);
-    strncpy(lssdp.header.device_type,"commend_switchbox\0",LSSDP_FIELD_LEN);
-    strncpy(lssdp.header.sm_id,"commend_switchbox\0",LSSDP_FIELD_LEN);
-    strncpy(lssdp.header.unique_service_name,"Barcode",LSSDP_FIELD_LEN);
-    lssdp_socket_create(&lssdp);
-    lssdp_send_msearch(&lssdp);
+	strncpy(lssdp.header.search_target,"commend_switchbox\0",LSSDP_FIELD_LEN);
+	strncpy(lssdp.header.device_type,"commend_switchbox\0",LSSDP_FIELD_LEN);
+	strncpy(lssdp.header.sm_id,"commend_switchbox\0",LSSDP_FIELD_LEN);
+	strncpy(lssdp.header.unique_service_name,"Barcode",LSSDP_FIELD_LEN);
+	lssdp_socket_create(&lssdp);
+	lssdp_send_msearch(&lssdp);
 
 
-    while (!done) {
-        fd_set fs;
-        FD_ZERO(&fs);
-        FD_SET(lssdp.sock, &fs);
-        struct timeval tv;
-        tv.tv_sec = 0;
-        tv.tv_usec = 500 * 1000;   // 500 ms
+	while (!done) {
+		fd_set fs;
+		FD_ZERO(&fs);
+		FD_SET(lssdp.sock, &fs);
+		struct timeval tv;
+		tv.tv_sec = 0;
+		tv.tv_usec = 500 * 1000;   // 500 ms
 
-        remove_old_devices();
-        render_screen();
+		remove_old_devices();
+		render_screen();
 
-        int ret = select(lssdp.sock + 1, &fs, NULL, NULL, &tv);
-        if (ret < 0) {
-            //printf("select error, ret = %d\n", ret);
-            break;
-        }
+		int ret = select(lssdp.sock + 1, &fs, NULL, NULL, &tv);
+		if (ret < 0) {
+			//printf("select error, ret = %d\n", ret);
+			break;
+		}
 
-        if (ret > 0) {
-            lssdp_socket_read(&lssdp);
-        }
-    }
+		if (ret > 0) {
+			lssdp_socket_read(&lssdp);
+		}
+	}
 
-    lssdp_socket_close(&lssdp);
+	lssdp_socket_close(&lssdp);
 }
 
 
 int main() {
 
 
-    initscr();			/* Start curses mode 		  */
-    clear();
+	initscr();			/* Start curses mode 		  */
+	clear();
 
 
-    int startx, starty, width, height;
-    height = 30;
-    width  = 80;
-    starty = 0;
-    startx = 0;
+	int startx, starty, width, height;
+	height = 30;
+	width  = 80;
+	starty = 0;
+	startx = 0;
 
-    device_win = newwin(height, width, starty, startx);
-    local_win = newwin(4, width, starty+height+4, startx);
+	device_win = newwin(height, width, starty, startx);
+	local_win = newwin(4, width, starty+height+4, startx);
 
-    render_screen();
-    render_local_screen();
+	render_screen();
+	render_local_screen();
 
-    std::thread t_MainThread(mainLoop);
-    while(true) {
-        std::string input;
-        wgetstr(local_win,in_buf);
-        char*pos;
-        if((pos = strstr(in_buf,"add")) != 0) {
+	std::thread t_MainThread(mainLoop);
+	while(true) {
+		std::string input;
+		wgetstr(local_win,in_buf);
+		char*pos;
+		if((pos = strstr(in_buf,"add")) != 0) {
 
-            struct device *tmp = get_device(&device_list, atoi(pos+3)-1);
-            if (tmp) {
-                connect_device(tmp);
-                snprintf(out_buf,255,"Added device %d",atoi(pos+3));
-            }
-            else {
-                snprintf(out_buf,255,"Unknown device number");
-            }
-        } else if ((pos = strstr(in_buf,"rm")) != 0) {
-            struct device *tmp = get_device(&paired_device_list, atoi(pos+2)-1);
-            if(tmp) {
-                disconnect_device(tmp);
-                snprintf(out_buf,255,"Removed device %d",atoi(pos+2));
-            }
-            else {
-                snprintf(out_buf,255,"Unknown device number");
-            }
-       } else if ((pos = strstr(in_buf,"quit")) != 0) {
-            done = true;
-            break;
-       } else {
-            snprintf(out_buf,255,"Unknown command");
-        }
-        render_screen();
-        render_local_screen();
-    }
+			struct device *tmp = get_device(&device_list, atoi(pos+3)-1);
+			if (tmp) {
+				connect_device(tmp);
+				snprintf(out_buf,255,"Added device %d",atoi(pos+3));
+			}
+			else {
+				snprintf(out_buf,255,"Unknown device number");
+			}
+		} else if ((pos = strstr(in_buf,"rm")) != 0) {
+			struct device *tmp = get_device(&paired_device_list, atoi(pos+2)-1);
+			if(tmp) {
+				disconnect_device(tmp);
+				snprintf(out_buf,255,"Removed device %d",atoi(pos+2));
+			}
+			else {
+				snprintf(out_buf,255,"Unknown device number");
+			}
+		} else if ((pos = strstr(in_buf,"quit")) != 0) {
+			done = true;
+			break;
+		} else {
+			snprintf(out_buf,255,"Unknown command");
+		}
+		render_screen();
+		render_local_screen();
+	}
 
-    t_MainThread.join();
+	t_MainThread.join();
 
-    endwin();
+	endwin();
 
-    return EXIT_SUCCESS;
+	return EXIT_SUCCESS;
 }

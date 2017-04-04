@@ -44,8 +44,9 @@ static const char * MSEARCH  =  "M-SEARCH";
 static const char * NOTIFY  =  "NOTIFY";
 
 
-static void (* _log_callback)(const char * file, const char * tag, int level, int line,
-                       const char * func, const char * message) = NULL;
+static void (* _log_callback)(const char * file, const char * tag, int level,
+                              int line,
+                              const char * func, const char * message) = NULL;
 
 
 /** Internal Function **/
@@ -109,8 +110,10 @@ int lssdp_socket_create(lssdp_ctx * lssdp) {
 	hints.ai_family   = multicastAddr->ai_family;
 	hints.ai_socktype = SOCK_DGRAM;
 	hints.ai_flags    = AI_PASSIVE; /* Return an address we can bind to */
-	if ((status = getaddrinfo(NULL, lssdp->config.multicastPort, &hints, &localAddr)) != 0 ) {
-		lssdp_error("Failed to get local address for destination: %s\n", gai_strerror(status));
+	if ((status = getaddrinfo(NULL, lssdp->config.multicastPort, &hints,
+	                          &localAddr)) != 0 ) {
+		lssdp_error("Failed to get local address for destination: %s\n",
+		            gai_strerror(status));
 		goto fail;
 	}
 
@@ -374,7 +377,7 @@ int lssdp_send_notify(lssdp_ctx * lssdp) {
 	         "\r\n",
 	         HEADER_NOTIFY,                              // HEADER
 	         lssdp->config.ADDR_MULTICAST, lssdp->port,  // HOST
-	         lssdp->header.max_age,              // LOCATION
+	         lssdp->header.max_age,
 	         lssdp->header.location.prefix,              // LOCATION
 	         lssdp->header.location.domain,              // LOCATION
 	         lssdp->header.location.suffix,
@@ -440,7 +443,8 @@ static int send_multicast_data(const char * data , lssdp_ctx*lssdp) {
 	}
 
 
-	lssdp_info("Using %s\n", multicastAddr2->ai_family == PF_INET6 ? "IPv6" : "IPv4");
+	lssdp_info("Using %s\n",
+	           multicastAddr2->ai_family == PF_INET6 ? "IPv6" : "IPv4");
 
 
 	/* Create socket for sending multicast datagrams */
@@ -520,7 +524,7 @@ static int lssdp_send_response(lssdp_ctx * lssdp, struct sockaddr_in6 address) {
 	                            "DEV_TYPE:%s\r\n"
 	                            "\r\n",
 	                            HEADER_RESPONSE,                     // HEADER
-				    lssdp->header.max_age,
+	                            lssdp->header.max_age,
 	                            lssdp->header.location.prefix,              // LOCATION
 	                            lssdp->header.location.domain,
 	                            lssdp->header.location.suffix,
@@ -691,6 +695,18 @@ static int parse_field_line(const char * data, size_t start, size_t end,
 		return 0;
 	}
 
+	if (field_len == strlen("CACHE-CONTROL")
+	        && strncasecmp(field, "CACHE-CONTROL", field_len) == 0) {
+		if (strncasecmp(value, "max-age=", 8) == 0) {
+			int max_packet_age = atoi(value+8);
+			if ( max_packet_age == 0)
+				max_packet_age = 10;
+			packet->max_age = max_packet_age;
+		}
+		return 0;
+	}
+
+	lssdp_error("FIELD: %s not handled\n",field);
 	// the field is not in the struct packet
 	return 0;
 }
