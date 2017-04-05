@@ -5,6 +5,12 @@ light weight SSDP library
 
 The Simple Service Discovery Protocol (SSDP) is a network protocol based on the Internet Protocol Suite for advertisement and discovery of network services and presence information.
 
+### License
+
+lssdp has been forked from https://github.com/zlargon/lssdp, released under the MIT license.
+Modification to the forked code are copyright 2017 Commend International GmbH and the respecitve authors,
+and released under MIT license.
+
 ====
 
 ### Support Platform
@@ -13,6 +19,12 @@ The Simple Service Discovery Protocol (SSDP) is a network protocol based on the 
 * MAC OSX
 * Android
 * iOS
+
+### Build dependency
+
+A C/C++ compiler supporting C99/C++11 is required, tested with GCC 5.4.
+
+The libraries provided by the following Ubuntu packages must be installed: libncurses5-dev, libtinfo-dev, libgpm-dev.
 
 ====
 
