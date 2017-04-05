@@ -25,9 +25,16 @@ make
 cd test
 ./client.exe
 
-on a other machine
 ./service.exe <identification_id>
+
+
+Client lists all services and removes stopped services.
+
 ```
+
+
+
+
 
 ====
 
