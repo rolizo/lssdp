@@ -1,12 +1,17 @@
 CC ?= gcc
 CFLAGS ?= -fPIC
 
-all: lib
+all: liblssdp.so liblssdp.a
 	$(MAKE) -C test
 
-lib: lssdp.o
+liblssdp.so: lssdp.o
 	gcc -o liblssdp.so lssdp.o  -fPIC -shared
 
+liblssdp.a: lssdp.o
+	$(AR) rcv liblssdp.a lssdp.o
+
+install: all
+
 clean:
-	rm -rf *.o *.so
+	rm -rf *.o *.so *.a
 	$(MAKE) -C test clean
