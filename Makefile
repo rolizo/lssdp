@@ -5,7 +5,7 @@ all: liblssdp.so liblssdp.a
 	$(MAKE) -C test
 
 liblssdp.so: lssdp.o
-	gcc -o liblssdp.so lssdp.o  -fPIC -shared
+	$(CC) -o liblssdp.so lssdp.o  -fPIC -shared
 
 liblssdp.a: lssdp.o
 	$(AR) rcv liblssdp.a lssdp.o
