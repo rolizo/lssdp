@@ -37,7 +37,7 @@ make
 cd test
 ./client.exe
 
-./service.exe <identification_id>
+./service.exe <unique_service_name> <location.domain> 
 
 
 Client lists all services and removes stopped services.
