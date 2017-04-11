@@ -2,11 +2,9 @@
 #define CLIENT_H
 
 
-#define ALIVE_TIMEOUT 60
-
-
 #include <string>
 #include <list>
+#include "lssdp.h"
 
 typedef enum {PAIRED, UNREACHABLE} t_state;
 
@@ -20,6 +18,7 @@ typedef struct device
 	int max_age;
 } device;
 
+lssdp_ctx lssdp;
 typedef std::list<device*> t_device_list;
 t_device_list device_list;
 t_device_list paired_device_list;

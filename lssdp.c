@@ -50,6 +50,8 @@ static void (* _log_callback)(const char * file, const char * tag, int level,
 
 
 /** Internal Function **/
+static int neighbor_list_remove(lssdp_ctx * lssdp, char* usn) ;
+static int neighbor_list_add(lssdp_ctx * lssdp, const lssdp_packet packet);
 static int send_multicast_data(const char * data , lssdp_ctx * lssdp);
 static int lssdp_send_response(lssdp_ctx * lssdp, struct sockaddr_in6 address);
 static int parse_field_line(const char * data, size_t start, size_t end,
@@ -67,6 +69,7 @@ void lssdp_init(lssdp_ctx * lssdp) {
 	lssdp->config.ADDR_LOCALHOST = "127.0.0.1";
 	lssdp->config.ADDR_MULTICAST = "239.255.255.250";
 	lssdp->header.max_age = 10;
+	lssdp->neighbor_list = NULL;
 }
 
 
@@ -260,8 +263,18 @@ int lssdp_socket_read(lssdp_ctx * lssdp) {
 		return 0;
 	}
 
+	if (strcmp(packet.method, NOTIFY) == 0) {
+		if(strcmp("ssdp:byebye",packet.nts) == 0) {
+			packet.max_age = 0;
+			neighbor_list_add(lssdp, packet);
+		} else {
+			neighbor_list_add(lssdp, packet);
+		}
+	}
 
-
+	if (strcmp(packet.method, RESPONSE) == 0) {
+		neighbor_list_add(lssdp, packet);
+	}
 
 	// invoke packet received callback
 	if (lssdp->packet_received_callback != NULL) {
@@ -710,6 +723,168 @@ static int parse_field_line(const char * data, size_t start, size_t end,
 	// the field is not in the struct packet
 	return 0;
 }
+
+
+
+static int neighbor_list_add(lssdp_ctx * lssdp, const lssdp_packet packet) {
+	lssdp_nbr * last_nbr = lssdp->neighbor_list;
+
+	bool is_changed = false;
+	lssdp_nbr * nbr;
+	for (nbr = lssdp->neighbor_list; nbr != NULL; last_nbr = nbr, nbr = nbr->next) {
+		if (strcmp(nbr->location, packet.location) != 0) {
+			// location is not match
+			continue;
+		}
+
+		/* location is not found in SSDP list: update neighbor */
+
+		// usn
+		if (strcmp(nbr->usn, packet.usn) != 0) {
+			lssdp_debug("neighbor usn is changed. (%s -> %s)\n", nbr->usn, packet.usn);
+			memcpy(nbr->usn, packet.usn, LSSDP_FIELD_LEN);
+			is_changed = true;
+		}
+
+		// sm_id
+		if (strcmp(nbr->sm_id, packet.sm_id) != 0) {
+			lssdp_debug("neighbor sm_id is changed. (%s -> %s)\n", nbr->sm_id,
+			            packet.sm_id);
+			memcpy(nbr->sm_id, packet.sm_id, LSSDP_FIELD_LEN);
+			is_changed = true;
+		}
+
+		// device type
+		if (strcmp(nbr->device_type, packet.device_type) != 0) {
+			lssdp_debug("neighbor device_type is changed. (%s -> %s)\n", nbr->device_type,
+			            packet.device_type);
+			memcpy(nbr->device_type, packet.device_type, LSSDP_FIELD_LEN);
+			is_changed = true;
+		}
+
+		// update_time
+		nbr->update_time = packet.update_time;
+		nbr->max_age = packet.max_age;
+		goto end;
+	}
+
+
+	/* location is not found in SSDP list: add to list */
+
+	// 1. memory allocate lssdp_nbr
+	nbr = (lssdp_nbr *) malloc(sizeof(lssdp_nbr));
+	if (nbr == NULL) {
+		lssdp_error("malloc failed, errno = %s (%d)\n", strerror(errno), errno);
+		return -1;
+	}
+
+	// 2. setup neighbor
+	memcpy(nbr->usn,         packet.usn,         LSSDP_FIELD_LEN);
+	memcpy(nbr->sm_id,       packet.sm_id,       LSSDP_FIELD_LEN);
+	memcpy(nbr->device_type, packet.device_type, LSSDP_FIELD_LEN);
+	memcpy(nbr->location,    packet.location,    LSSDP_LOCATION_LEN);
+	nbr->update_time = packet.update_time;
+	nbr->max_age = packet.max_age;
+	nbr->next = NULL;
+
+	// 3. add neighbor to the end of list
+	if (last_nbr == NULL) {
+		// it's the first neighbor
+		lssdp->neighbor_list = nbr;
+	} else {
+		last_nbr->next = nbr;
+	}
+
+	is_changed = true;
+end:
+	// invoke neighbor list changed callback
+	if (lssdp->neighbor_list_changed_callback != NULL && is_changed == true) {
+		lssdp->neighbor_list_changed_callback(lssdp);
+	}
+
+	return 0;
+}
+
+//FIXME
+//returns 0 if found, 1 otherwise
+static int neighbor_list_remove(lssdp_ctx * lssdp, char* usn) {
+
+	lssdp_nbr * nbr  = lssdp->neighbor_list;
+	lssdp_nbr * prev = NULL;
+	while (nbr != NULL) {
+		if (strcmp(usn,nbr->usn) != 0) {
+			prev = nbr;
+			nbr  = nbr->next;
+			continue;
+
+		}
+		if (prev == NULL) {
+			// it's first neighbor in list
+			lssdp->neighbor_list = nbr->next;
+			free(nbr);
+			nbr = lssdp->neighbor_list;
+		} else {
+			prev->next = nbr->next;
+			free(nbr);
+			nbr = prev->next;
+		}
+
+		return 0;
+	}
+	return 1;
+}
+
+
+// 07. lssdp_neighbor_check_timeout
+int lssdp_neighbor_check_timeout(lssdp_ctx * lssdp) {
+	if (lssdp == NULL) {
+		lssdp_error("lssdp should not be NULL\n");
+		return -1;
+	}
+
+	long long current_time = get_current_time();
+	if (current_time < 0) {
+		lssdp_error("got invalid timestamp %lld\n", current_time);
+		return -1;
+	}
+
+	bool is_changed = false;
+	lssdp_nbr * prev = NULL;
+	lssdp_nbr * nbr  = lssdp->neighbor_list;
+
+
+	while (nbr != NULL) {
+		long pass_time = current_time - nbr->update_time;
+		if (pass_time < nbr->max_age*1000) {
+			prev = nbr;
+			nbr  = nbr->next;
+			continue;
+		}
+
+		is_changed = true;
+		fprintf(stderr,"remove timeout SSDP neighbor: %s (%s) (%ldms) maxAGE:%d\n",
+		        nbr->sm_id, nbr->location, pass_time, nbr->max_age);
+
+		if (prev == NULL) {
+			// it's first neighbor in list
+			lssdp->neighbor_list = nbr->next;
+			free(nbr);
+			nbr = lssdp->neighbor_list;
+		} else {
+			prev->next = nbr->next;
+			free(nbr);
+			nbr = prev->next;
+		}
+	}
+
+	// invoke neighbor list changed callback
+	if (is_changed == true && lssdp->neighbor_list_changed_callback != NULL) {
+		lssdp->neighbor_list_changed_callback(lssdp);
+	}
+	return 0;
+}
+
+
 
 static int get_colon_index(const char * string, size_t start, size_t end) {
 	size_t i;

@@ -43,6 +43,7 @@ typedef struct lssdp_nbr {
 	char        sm_id       [LSSDP_FIELD_LEN];
 	char        device_type [LSSDP_FIELD_LEN];
 	long long   update_time;
+	int max_age;
 	struct lssdp_nbr * next;
 } lssdp_nbr;
 
@@ -136,6 +137,10 @@ int lssdp_send_notify(lssdp_ctx * lssdp);
 
 int lssdp_packet_parser(const char * data, size_t data_len,
                         lssdp_packet * packet);
+
+
+
+int lssdp_neighbor_check_timeout(lssdp_ctx * lssdp);
 
 
 void lssdp_set_log_callback(void (* callback)(const char * file,

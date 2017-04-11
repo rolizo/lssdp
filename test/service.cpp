@@ -93,14 +93,20 @@ int main( int argc, char *argv[] ) {
 	strncpy(lssdp.header.search_target,"commend_switchbox\0",LSSDP_FIELD_LEN);
 	strncpy(lssdp.header.device_type,"commend_switchbox\0",LSSDP_FIELD_LEN);
 	strncpy(lssdp.header.sm_id,"commend_switchbox\0",LSSDP_FIELD_LEN);
-	if(argc == 2) {
+	if(argc >= 2) {
 		strncpy(lssdp.header.unique_service_name,argv[1],LSSDP_FIELD_LEN);
 	} else {
 		strncpy(lssdp.header.unique_service_name,"DUMMY_BARCODE",LSSDP_FIELD_LEN);
 
 	}
+
+	if(argc >= 3) {
+		strncpy(lssdp.header.location.domain,argv[2],LSSDP_FIELD_LEN);
+	}
+
 	if (lssdp_socket_create(&lssdp) < 0)
 		exit(EXIT_FAILURE);
+
 	lssdp_send_notify(&lssdp);
 
 	//Capture CTRL-C and send bye before exiting
@@ -122,6 +128,7 @@ int main( int argc, char *argv[] ) {
 			printf("select error, ret = %d\n", ret);
 			break;
 		}
+		lssdp_neighbor_check_timeout(&lssdp);
 
 		if((get_current_time() - timelast) > RESEND_INTERVAL*1000) {
 			timelast = get_current_time();
