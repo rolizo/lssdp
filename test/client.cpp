@@ -168,10 +168,12 @@ int ping_device(struct device*target) {
 	return 0;
 }
 
+
+
 void ping_devices() {
 
 	t_device_list::iterator iter;
-	for(iter = device_list.begin(); iter != device_list.end(); iter++) {
+	for(iter = paired_device_list.begin(); iter != paired_device_list.end(); iter++) {
 		ping_device(*iter);
 	}
 
