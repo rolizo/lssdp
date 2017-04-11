@@ -50,7 +50,6 @@ static void (* _log_callback)(const char * file, const char * tag, int level,
 
 
 /** Internal Function **/
-static int neighbor_list_remove(lssdp_ctx * lssdp, char* usn) ;
 static int neighbor_list_add(lssdp_ctx * lssdp, const lssdp_packet packet);
 static int send_multicast_data(const char * data , lssdp_ctx * lssdp);
 static int lssdp_send_response(lssdp_ctx * lssdp, struct sockaddr_in6 address);
@@ -803,35 +802,6 @@ end:
 	}
 
 	return 0;
-}
-
-//FIXME
-//returns 0 if found, 1 otherwise
-static int neighbor_list_remove(lssdp_ctx * lssdp, char* usn) {
-
-	lssdp_nbr * nbr  = lssdp->neighbor_list;
-	lssdp_nbr * prev = NULL;
-	while (nbr != NULL) {
-		if (strcmp(usn,nbr->usn) != 0) {
-			prev = nbr;
-			nbr  = nbr->next;
-			continue;
-
-		}
-		if (prev == NULL) {
-			// it's first neighbor in list
-			lssdp->neighbor_list = nbr->next;
-			free(nbr);
-			nbr = lssdp->neighbor_list;
-		} else {
-			prev->next = nbr->next;
-			free(nbr);
-			nbr = prev->next;
-		}
-
-		return 0;
-	}
-	return 1;
 }
 
 
